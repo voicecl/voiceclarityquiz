@@ -1049,6 +1049,11 @@ button[data-test*="edit"],
 
 /* Ensure submit button text is also white */
 #submit-feedback {
-  color: white !important;
+  color: white;
+}
+
+/* Answer Button */
+.answer-button {
+  color: white;
 }
 
