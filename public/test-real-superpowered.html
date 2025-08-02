@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Superpowered SDK Real Processing Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; padding: 0; }
+        .container { max-width: 700px; margin: 40px auto; background: #fff; border-radius: 10px; box-shadow: 0 2px 8px #0001; padding: 32px; }
+        h1 { font-size: 2rem; margin-bottom: 0.5em; }
+        .desc { color: #444; margin-bottom: 1.5em; }
+        .log { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 10px; margin: 10px 0; max-height: 200px; overflow-y: auto; font-family: monospace; font-size: 13px; }
+        .audio-controls { margin: 1em 0; display: flex; gap: 1em; }
+        .audio-controls audio { outline: 1px solid #ccc; border-radius: 4px; }
+        .btn { background: #007bff; color: #fff; border: none; padding: 10px 18px; border-radius: 4px; cursor: pointer; font-size: 1rem; }
+        .btn:disabled { background: #aaa; cursor: not-allowed; }
+        .status { margin: 1em 0; padding: 0.7em 1em; border-radius: 4px; font-weight: bold; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        label { font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Superpowered SDK Real Processing Test</h1>
+        <div class="desc">
+            <p><b>Goal:</b> Hear the effect of Superpowered SDK processing on your voice or a sample recording.</p>
+            <ul>
+                <li>Pitch shift, formant correction, EQ, compression, filtering (A/B/C/D versions)</li>
+            </ul>
+            <p>Load a short WAV/MP3 file, process it, and compare the original and processed versions.</p>
+        </div>
+        <div>
+            <label for="audio-file">Select audio file (WAV/MP3):</label>
+            <input type="file" id="audio-file" accept="audio/*">
+            <button class="btn" id="process-btn" disabled>Process with Superpowered</button>
+        </div>
+        <div class="status info" id="status">Waiting for file...</div>
+        <div class="audio-controls">
+            <div>
+                <div><b>Original</b></div>
+                <audio id="original-audio" controls></audio>
+            </div>
+            <div>
+                <div><b>Version A</b></div>
+                <audio id="version-a-audio" controls></audio>
+            </div>
+            <div>
+                <div><b>Version B</b></div>
+                <audio id="version-b-audio" controls></audio>
+            </div>
+            <div>
+                <div><b>Version C</b></div>
+                <audio id="version-c-audio" controls></audio>
+            </div>
+            <div>
+                <div><b>Version D</b></div>
+                <audio id="version-d-audio" controls></audio>
+            </div>
+        </div>
+        <div class="log" id="log"></div>
+    </div>
+    <script type="module">
+        // This script assumes AudioProcessor and SuperpoweredVoiceProcessor are loaded as described in the main instructions
+        let audioProcessor;
+        const log = msg => {
+            const el = document.getElementById('log');
+            el.innerHTML += `[${new Date().toLocaleTimeString()}] ${msg}<br>`;
+            el.scrollTop = el.scrollHeight;
+            console.log(msg);
+        };
+        const setStatus = (msg, type='info') => {
+            const el = document.getElementById('status');
+            el.textContent = msg;
+            el.className = `status ${type}`;
+        };
+        document.getElementById('audio-file').addEventListener('change', async e => {
+            const file = e.target.files[0];
+            if (!file) return;
+            setStatus('Loading audio file...', 'info');
+            log(`Selected file: ${file.name}`);
+            // Decode audio
+            const arrayBuffer = await file.arrayBuffer();
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+            // Export to WAV for playback
+            const wavBlob = bufferToWavBlob(audioBuffer);
+            document.getElementById('original-audio').src = URL.createObjectURL(wavBlob);
+            setStatus('File loaded. Ready to process.', 'success');
+            document.getElementById('process-btn').disabled = false;
+            log(`Audio loaded: ${audioBuffer.duration.toFixed(2)}s, ${audioBuffer.numberOfChannels}ch, ${audioBuffer.sampleRate}Hz`);
+            window._testAudioBuffer = audioBuffer;
+        });
+        document.getElementById('process-btn').addEventListener('click', async () => {
+            setStatus('Initializing Superpowered and processing...', 'info');
+            log('Initializing AudioProcessor...');
+            if (!audioProcessor) {
+                audioProcessor = new window.AudioProcessor();
+                await audioProcessor.initialize();
+            }
+            const audioBuffer = window._testAudioBuffer;
+            if (!audioBuffer) {
+                setStatus('No audio loaded.', 'error');
+                return;
+            }
+            setStatus('Processing all versions (A/B/C/D)...', 'info');
+            log('Processing all versions...');
+            const processedVersions = await audioProcessor.processRecording(audioBuffer);
+            if (!processedVersions) {
+                setStatus('Processing failed.', 'error');
+                return;
+            }
+            // Export each version to WAV for playback
+            for (const [version, buffer] of processedVersions) {
+                const wavBlob = bufferToWavBlob(buffer);
+                document.getElementById(`version-${version.toLowerCase()}-audio`).src = URL.createObjectURL(wavBlob);
+                log(`Version ${version} ready for playback.`);
+            }
+            setStatus('Processing complete! Listen and compare.', 'success');
+            log('All versions processed and ready.');
+        });
+        // Helper: Convert AudioBuffer to WAV Blob
+        function bufferToWavBlob(buffer) {
+            const numChannels = buffer.numberOfChannels;
+            const sampleRate = buffer.sampleRate;
+            const length = buffer.length * numChannels * 2 + 44;
+            const arrayBuffer = new ArrayBuffer(length);
+            const view = new DataView(arrayBuffer);
+            // RIFF header
+            function writeString(view, offset, string) {
+                for (let i = 0; i < string.length; i++) {
+                    view.setUint8(offset + i, string.charCodeAt(i));
+                }
+            }
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, 36 + buffer.length * numChannels * 2, true);
+            writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, numChannels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * numChannels * 2, true);
+            view.setUint16(32, numChannels * 2, true);
+            view.setUint16(34, 16, true);
+            writeString(view, 36, 'data');
+            view.setUint32(40, buffer.length * numChannels * 2, true);
+            // PCM samples
+            let offset = 44;
+            for (let i = 0; i < buffer.length; i++) {
+                for (let ch = 0; ch < numChannels; ch++) {
+                    let sample = buffer.getChannelData(ch)[i];
+                    sample = Math.max(-1, Math.min(1, sample));
+                    view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+                    offset += 2;
+                }
+            }
+            return new Blob([arrayBuffer], { type: 'audio/wav' });
+        }
+    </script>
+</body>
+</html> 

@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Personalization Listening Quiz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+    <div id="app" class="app-container">
+        <!-- Landing Page -->
+        <div id="landing-page" class="screen active">
+            <div class="text-center">
+                <div class="text-4xl mb-4">🎙️</div>
+                <h1 class="text-3xl font-bold mb-4">Voice Clarity Quiz</h1>
+                <p class="text-aura-secondary mb-8 leading-relaxed">
+                    Which version of your answers sounds better to you?
+                </p>
+                <button id="start-quiz-btn" class="btn-primary mb-8">Start Quiz</button>
+                
+                <!-- Microphone Test Button -->
+                <button id="test-microphone-btn" class="btn-secondary mb-4">Test Microphone</button>
+                <div id="microphone-status" class="text-sm text-aura-secondary mb-4"></div>
+                <div class="text-xs text-aura-secondary mb-4 italic">For best results, we recommend using Chrome or Firefox. Safari may experience audio processing limitations.</div>
+                
+                <div class="text-sm text-aura-secondary space-y-2">
+                    <div>• 10 quick questions</div>
+                    <div>• Read prompts and record your responses</div>
+                    <div>• Compare processed audio versions of your voice</div>
+                    <div>• Select which version sounds better to you</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Registration & Privacy Consent Page -->
+        <div id="registration-page" class="screen">
+            <div class="text-center max-w-md mx-auto">
+                <div class="text-3xl mb-4">📋</div>
+                <h2 class="text-2xl font-bold mb-6">Voice Research Study</h2>
+                
+                <!-- Privacy Notice -->
+                <div class="privacy-notice text-left mb-6">
+                    <h3 class="text-lg font-semibold mb-3">What we collect:</h3>
+                    <ul class="text-sm text-aura-secondary space-y-1 mb-4">
+                        <li>• Your name and email (for tracking participation)</li>
+                        <li>• Short voice recordings (automatically deleted after processing)</li>
+                        <li>• Your preferences between different audio versions</li>
+                        <li>• Device information (mobile vs desktop)</li>
+                    </ul>
+                    
+                    <h3 class="text-lg font-semibold mb-3">Data protection:</h3>
+                    <ul class="text-sm text-aura-secondary space-y-1 mb-4">
+                        <li>• Voice recordings are deleted within 1 hour of completion</li>
+                        <li>• Only anonymized preference data is stored long-term</li>
+                        <li>• No personal voice data is shared with third parties</li>
+                        <li>• You can request data deletion anytime</li>
+                    </ul>
+                </div>
+
+                <!-- Registration Form -->
+                <form id="registration-form" class="space-y-4">
+                    <div>
+                        <input type="text" id="firstName" name="firstName" required 
+                               class="form-input" placeholder="First Name">
+                    </div>
+                    <div>
+                        <input type="text" id="lastName" name="lastName" required 
+                               class="form-input" placeholder="Last Name">
+                    </div>
+                    <div>
+                        <input type="email" id="email" name="email" required 
+                               class="form-input" placeholder="Email Address">
+                    </div>
+                    
+                    <!-- Consent Checkbox -->
+                    <div class="consent-section">
+                        <label class="flex items-start space-x-3 text-left">
+                            <input type="checkbox" id="consent" name="consent" required 
+                                   class="consent-checkbox mt-1">
+                            <span class="text-sm text-aura-secondary">
+                                I consent to participate in this voice research study and understand 
+                                that my voice recordings will be processed and then automatically deleted.
+                            </span>
+                        </label>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" id="register-btn" class="btn-primary w-full mt-6">
+                        Begin Voice Study
+                    </button>
+                </form>
+
+                <!-- Already Participated Message -->
+                <div id="already-participated" class="hidden">
+                    <div class="text-4xl mb-4">✅</div>
+                    <h3 class="text-xl font-semibold mb-4">Thank you!</h3>
+                    <p class="text-aura-secondary mb-4">
+                        You've already completed this study. Thank you for your participation!
+                    </p>
+                    <p class="text-sm text-aura-secondary">
+                        If you believe this is an error, please contact our research team.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recording Page -->
+        <div id="recording-page" class="screen">
+            <div class="text-center">
+                <!-- Progress Dots -->
+                <div class="progress-dots">
+                    <div class="progress-dot" data-question="0"></div>
+                    <div class="progress-dot" data-question="1"></div>
+                    <div class="progress-dot" data-question="2"></div>
+                    <div class="progress-dot" data-question="3"></div>
+                    <div class="progress-dot" data-question="4"></div>
+                    <div class="progress-dot" data-question="5"></div>
+                    <div class="progress-dot" data-question="6"></div>
+                </div>
+
+                <!-- Question Counter -->
+                <div id="question-counter" class="text-aura-secondary mb-6">Question 1 of 7</div>
+
+                <!-- Question Display -->
+                <div id="question-text" class="question-text">What's your favorite place to relax and why?</div>
+                <div id="question-hint" class="question-hint">Think about anywhere that feels perfect to you</div>
+
+                <!-- Record Button -->
+                <button id="record-btn" class="record-button mb-6">
+                    <span id="record-icon">🎙️</span>
+                </button>
+
+                <!-- Status Text -->
+                <div id="status-text" class="status-text">Tap to start</div>
+
+                <!-- Timer -->
+                <div id="timer" class="timer hidden">00:00</div>
+
+                <!-- Progress Bar -->
+                <div class="progress-bar mb-6">
+                    <div id="recording-progress" class="progress-fill" style="width: 0%"></div>
+                </div>
+
+                <!-- Playback Controls (hidden initially) -->
+                <div id="playback-controls" class="hidden flex gap-4 justify-center mt-6">
+                    <button id="play-recording-btn" class="btn-secondary">Play Back Recording</button>
+                    <button id="re-record-btn" class="btn-secondary">Re-record</button>
+                    <button id="continue-btn" class="btn-primary">Continue</button>
+                </div>
+
+                <!-- Recording Complete Controls (hidden initially) -->
+                <div id="recording-complete-controls" class="hidden">
+                    <div class="text-center">
+                        <div class="text-lg mb-4 text-success-green">✓ Recording Complete</div>
+                        <div class="flex gap-4 justify-center">
+                            <button id="restart-question-btn" class="btn-secondary">Restart Question</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Processing Page -->
+        <div id="processing-page" class="screen">
+            <div class="text-center">
+                <div class="text-4xl mb-6">🎵 ⚡ 🎙️</div>
+                <h2 class="text-2xl font-semibold mb-6">Creating your personalized<br>voice versions...</h2>
+                
+                <!-- Loading Bar -->
+                <div class="loading-bar mb-4">
+                    <div id="processing-progress" class="loading-fill"></div>
+                </div>
+                
+                <div id="processing-status" class="text-aura-secondary mb-4">Processing question 1 of 7</div>
+                <div class="text-sm text-aura-secondary">This may take a few moments</div>
+            </div>
+        </div>
+
+        <!-- Comparison Page: revert to original layout -->
+        <div id="comparison-page" class="screen">
+            <div class="text-center">
+                <h2 class="text-2xl font-semibold mb-2">Choose Your Preferred Version</h2>
+                <div id="comparison-question-counter" class="text-aura-secondary mb-6">Question 1 of 7</div>
+                <div class="two-choice-grid">
+                    <div class="choice-card" id="card-left">
+                        <h3 class="font-semibold mb-2">Version A</h3>
+                        <p class="text-sm text-aura-secondary mb-3 variant-label" id="label-left">&nbsp;</p>
+                        <button class="play-button" id="play-left">▶️</button>
+                        <button class="select-button" id="select-left">Choose A</button>
+                        <div class="checkmark hidden">✓</div>
+                    </div>
+                    <div class="choice-card" id="card-right">
+                        <h3 class="font-semibold mb-2">Version B</h3>
+                        <p class="text-sm text-aura-secondary mb-3 variant-label" id="label-right">&nbsp;</p>
+                        <button class="play-button" id="play-right">▶️</button>
+                        <button class="select-button" id="select-right">Choose B</button>
+                        <div class="checkmark hidden">✓</div>
+                    </div>
+                </div>
+                <div id="waveform-section" class="mt-8 p-6 bg-aura-surface rounded-lg border border-aura-border">
+                    <h3 class="text-lg font-semibold mb-4">Audio Visualization</h3>
+                    <div class="waveform-container mb-4">
+                        <canvas id="waveform-canvas" width="800" height="120" class="w-full h-32 bg-aura-background border border-aura-border rounded"></canvas>
+                    </div>
+                    <div id="playing-info" class="mt-4 text-center text-sm text-aura-secondary">
+                        <span id="current-version">No audio playing</span>
+                    </div>
+                </div>
+                <div id="selection-instructions" class="mt-6 p-4 bg-aura-surface rounded-lg border border-aura-border">
+                    <p class="text-aura-secondary">🎧 Listen to each audio, then choose which one you prefer</p>
+                    <p class="text-sm text-aura-muted mt-2">This is a blind comparison - the audio types will be revealed after your choice</p>
+                    <div class="keyboard-hint mt-3">
+                        <p class="text-sm text-aura-muted mb-2">Keyboard shortcuts:</p>
+                        <div class="flex justify-center gap-4 text-xs">
+                            <span><kbd>L</kbd> Play A</span>
+                            <span><kbd>R</kbd> Play B</span>
+                            <span><kbd>1</kbd> Choose A</span>
+                            <span><kbd>2</kbd> Choose B</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="feedback-section" class="opacity-50">
+                    <h3 class="text-lg font-semibold mb-4">Why did you choose this version?</h3>
+                    <div class="feedback-grid">
+                        <label class="feedback-tag">
+                            <input type="checkbox" name="reason" value="natural" disabled>
+                            <span>Sounds most natural</span>
+                        </label>
+                        <label class="feedback-tag">
+                            <input type="checkbox" name="reason" value="familiar" disabled>
+                            <span>Feels familiar to me</span>
+                        </label>
+                        <label class="feedback-tag">
+                            <input type="checkbox" name="reason" value="clear" disabled>
+                            <span>Clearest to listen to</span>
+                        </label>
+                        <label class="feedback-tag">
+                            <input type="checkbox" name="reason" value="warm" disabled>
+                            <span>Warm and pleasant</span>
+                        </label>
+                        <label class="feedback-tag">
+                            <input type="checkbox" name="reason" value="confident" disabled>
+                            <span>Makes me sound confident</span>
+                        </label>
+                        <label class="feedback-tag">
+                            <input type="checkbox" name="reason" value="myself" disabled>
+                            <span>Sounds like how I think I sound</span>
+                        </label>
+                    </div>
+                    <textarea id="feedback-comment" class="feedback-textarea" placeholder="Optional: Tell us more..." rows="3" disabled></textarea>
+                    <button id="submit-feedback" class="btn-primary mt-4" disabled>Submit Feedback & Continue</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Page: revert to original layout -->
+        <div id="results-page" class="screen">
+            <div class="text-center">
+                <div class="text-4xl mb-6">🎉 ✨</div>
+                <h2 class="text-2xl font-semibold mb-6">Personalization Complete!</h2>
+                <div class="mb-6">
+                    <p class="text-aura-secondary mb-2">Your preferred voice setting:</p>
+                    <div id="preferred-version" class="text-xl font-semibold text-primary-blue mb-2">Version C</div>
+                    <div id="preferred-description" class="text-aura-secondary">"Version C"</div>
+                </div>
+                <div class="mb-8">
+                    <p class="text-aura-secondary mb-3">Most selected reasons:</p>
+                    <div id="top-reasons" class="space-y-1 text-sm">
+                        <div>• Sounds most natural</div>
+                        <div>• Matches my inner voice</div>
+                        <div>• Makes me sound confident</div>
+                    </div>
+                </div>
+                <p class="text-aura-secondary mb-6">Your voice profile has been saved successfully</p>
+                <div class="flex gap-4 justify-center">
+                    <button id="download-results-btn" class="btn-secondary">Download Results</button>
+                    <button id="start-new-quiz-btn" class="btn-primary">Start New Quiz</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Thank You Screen (hidden by default) -->
+        <div id="thankyou-screen" class="hidden flex flex-col items-center justify-center py-16">
+          <div class="text-6xl mb-4">🎉</div>
+          <h2 class="text-3xl font-bold mb-2">Voice Clarity Quiz Complete!</h2>
+          <p class="text-lg text-gray-300 mb-6">
+            Thank you for participating in our voice preference study. Your preferences have been recorded and will help improve voice enhancement technology.
+          </p>
+          <p class="text-sm text-gray-500 mb-2">
+            Your voice recordings have been automatically deleted for your privacy protection.
+          </p>
+          <p class="text-sm text-gray-500">
+            You may close this window or return to the homepage.
+          </p>
+        </div>
+    </div>
+
+    <!-- Scripts - Load in correct order -->
+    <!-- Superpowered SDK will be imported in audio-processor.js -->
+    <script src="scripts/user-manager.js"></script>
+    <script src="scripts/webhook-service.js"></script>
+    <script type="module" src="scripts/audio-recorder.js"></script>
+    <script type="module" src="scripts/audio-processor.js"></script>
+    <script src="scripts/ui-controller.js"></script>
+    <script src="scripts/device-aware.js"></script>
+    <script src="scripts/app-simple.js"></script>
+    <script src="scripts/audio-format-fix.js"></script>
+</body>
+</html>
