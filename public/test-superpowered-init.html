@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Superpowered SDK Initialization Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .warning { background-color: #fff3cd; color: #856404; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        .log {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        button:disabled { background-color: #6c757d; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎵 Superpowered SDK Initialization Test</h1>
+        <p>This page tests the basic Superpowered SDK initialization using the local npm package.</p>
+        
+        <div id="status-container">
+            <div id="sdk-status" class="status info">Testing Superpowered SDK initialization...</div>
+        </div>
+        
+        <div>
+            <button id="test-init-btn" disabled>Test SDK Initialization</button>
+            <button id="clear-log-btn">Clear Log</button>
+        </div>
+        
+        <div class="log" id="test-log"></div>
+    </div>
+
+    <!-- Superpowered SDK initialization using local npm package -->
+    <script type="module">
+        console.log('🎵 Starting Superpowered SDK initialization test...');
+        
+        // Import from local npm package
+        import { SuperpoweredGlue, SuperpoweredWebAudio } from './node_modules/@superpoweredsdk/web/dist/Superpowered.js';
+        
+        console.log('✅ Superpowered SDK imported successfully');
+        console.log('📦 SuperpoweredGlue:', typeof SuperpoweredGlue);
+        console.log('📦 SuperpoweredWebAudio:', typeof SuperpoweredWebAudio);
+        
+        // Attach to window for global access
+        window.SuperpoweredGlue = SuperpoweredGlue;
+        window.SuperpoweredWebAudio = SuperpoweredWebAudio;
+        
+        // Update status
+        document.getElementById('sdk-status').textContent = 'Superpowered SDK imported successfully';
+        document.getElementById('sdk-status').className = 'status success';
+        document.getElementById('test-init-btn').disabled = false;
+        
+        // Test initialization function
+        window.testSuperpoweredInit = async function() {
+            const logElement = document.getElementById('test-log');
+            
+            function log(message) {
+                const timestamp = new Date().toLocaleTimeString();
+                logElement.innerHTML += `[${timestamp}] ${message}\n`;
+                logElement.scrollTop = logElement.scrollHeight;
+                console.log(message);
+            }
+            
+            try {
+                log('🧪 Testing Superpowered SDK initialization...');
+                
+                const licenseKey = 'ExampleLicenseKey-WillExpire-OnNextUpdate';
+                log(`📝 Using license key: ${licenseKey}`);
+                
+                log('🔄 Calling SuperpoweredGlue.Instantiate...');
+                const instance = await SuperpoweredGlue.Instantiate(licenseKey);
+                
+                log('✅ Superpowered SDK initialization successful!');
+                log(`📊 Instance type: ${typeof instance}`);
+                log(`📊 Instance constructor: ${instance.constructor.name}`);
+                
+                // Check for available methods
+                const methods = Object.getOwnPropertyNames(Object.getPrototypeOf(instance));
+                log(`🔧 Available methods: ${methods.join(', ')}`);
+                
+                // Test destruct if available
+                if (typeof instance.destruct === 'function') {
+                    log('🧹 Testing destruct method...');
+                    instance.destruct();
+                    log('✅ Destruct method called successfully');
+                } else {
+                    log('⚠️ No destruct method found');
+                }
+                
+                // Update status
+                document.getElementById('sdk-status').textContent = 'Superpowered SDK initialization successful!';
+                document.getElementById('sdk-status').className = 'status success';
+                
+            } catch (error) {
+                log(`❌ Superpowered SDK initialization failed: ${error.message}`);
+                log(`🔍 Error type: ${error.constructor.name}`);
+                log(`📋 Error stack: ${error.stack}`);
+                
+                // Update status
+                document.getElementById('sdk-status').textContent = `Initialization failed: ${error.message}`;
+                document.getElementById('sdk-status').className = 'status error';
+            }
+        };
+        
+        // Set up event listeners
+        document.getElementById('test-init-btn').addEventListener('click', window.testSuperpoweredInit);
+        document.getElementById('clear-log-btn').addEventListener('click', () => {
+            document.getElementById('test-log').innerHTML = '';
+        });
+        
+        // Auto-run test after a short delay
+        setTimeout(() => {
+            console.log('🎯 Auto-running Superpowered initialization test...');
+            window.testSuperpoweredInit();
+        }, 1000);
+        
+    </script>
+</body>
+</html> 

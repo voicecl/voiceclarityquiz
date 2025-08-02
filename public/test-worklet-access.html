@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+    <title>AudioWorklet Access Test</title>
+</head>
+<body>
+    <h1>AudioWorklet Access Test</h1>
+  <p>Check the console for results.</p>
+    <script>
+    (async () => {
+      try {
+        // 1. Create an AudioContext
+        const audioContext = new (window.AudioContext||window.webkitAudioContext)();
+        console.log('👍 AudioContext created');
+
+        // 2. Load the worklet module from the public folder
+        await audioContext.audioWorklet.addModule('scripts/voice-processor.js');
+        console.log('✅ voice-processor.js module loaded into AudioWorkletGlobalScope');
+
+        // 3. Instantiate the processor
+        const node = new AudioWorkletNode(audioContext, 'VoiceProcessor');
+        console.log('✅ AudioWorkletNode("VoiceProcessor") created successfully');
+
+        // 4. Clean up
+        node.port.postMessage({ command: 'shutdown' });
+        audioContext.close();
+        console.log('🔌 AudioContext closed');
+      } catch (err) {
+        console.error('❌ Worklet test failed:', err);
+      }
+    })();
+    </script>
+</body>
+</html> 
