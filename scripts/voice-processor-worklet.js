@@ -85,8 +85,30 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
 
     const results = {};
     
-    // Process raw version (pass-through)
+    // 🔍 DEBUG: Store original input for comparison
+    const originalInput = new Float32Array(inputBuffer);
+    console.log('🔍 Original input energy:', this._computeEnergy(originalInput).toFixed(6));
+    
+    // Process raw version (pass-through) - CRITICAL: This should be truly unprocessed
     results.raw = new Float32Array(inputBuffer);
+    
+    // 🔍 DEBUG: Verify raw is identical to original
+    const rawEnergy = this._computeEnergy(results.raw);
+    const originalEnergy = this._computeEnergy(originalInput);
+    const isIdentical = this._arraysEqual(results.raw, originalInput);
+    
+    console.log('🔍 Raw version check:', {
+      rawEnergy: rawEnergy.toFixed(6),
+      originalEnergy: originalEnergy.toFixed(6),
+      energyMatch: Math.abs(rawEnergy - originalEnergy) < 0.000001,
+      isIdentical: isIdentical,
+      rawLength: results.raw.length,
+      originalLength: originalInput.length
+    });
+    
+    if (!isIdentical) {
+      console.error('❌ CRITICAL BUG: Raw version is not identical to original input!');
+    }
     
     // Process other versions
     for (const [ver, p] of Object.entries(specs)) {
@@ -184,8 +206,38 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
       [ps, hp, lp, eq, comp, notch, vibro].forEach(p => p?.destruct?.());
     }
     
+    // 🔍 DEBUG: Final verification - check if any version matches raw
+    console.log('🔍 Final version comparison:');
+    for (const [ver, data] of Object.entries(results)) {
+      if (ver === 'raw') continue;
+      const isSameAsRaw = this._arraysEqual(data, results.raw);
+      const energyDiff = Math.abs(this._computeEnergy(data) - this._computeEnergy(results.raw));
+      console.log(`  ${ver} vs raw:`, {
+        isSameAsRaw,
+        energyDiff: energyDiff.toFixed(6),
+        hasProcessing: energyDiff > 0.000001
+      });
+    }
+    
     console.log('Processing complete. Output versions:', Object.keys(results));
     return results;
+  }
+
+  // Helper methods for debugging
+  _computeEnergy(buffer) {
+    let sum = 0;
+    for (let i = 0; i < buffer.length; i++) {
+      sum += Math.abs(buffer[i]);
+    }
+    return sum;
+  }
+
+  _arraysEqual(a, b) {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      if (Math.abs(a[i] - b[i]) > 0.000001) return false;
+    }
+    return true;
   }
 
   _cleanup() {

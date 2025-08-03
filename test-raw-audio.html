@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raw Audio Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+        .debug {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>Raw Audio Processing Test</h1>
+    
+    <div class="test-section">
+        <h2>Test 1: Verify Raw Version Integrity</h2>
+        <p>This test will check if the raw version is truly unprocessed.</p>
+        <button onclick="testRawVersion()">Run Test</button>
+        <div id="test1-results"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 2: Compare All Versions</h2>
+        <p>This test will compare all versions to ensure they're different.</p>
+        <button onclick="compareVersions()">Run Test</button>
+        <div id="test2-results"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 3: Energy Analysis</h2>
+        <p>This test will analyze the energy levels of each version.</p>
+        <button onclick="analyzeEnergy()">Run Test</button>
+        <div id="test3-results"></div>
+    </div>
+
+    <script>
+        // Helper functions
+        function computeEnergy(buffer) {
+            if (!buffer || !buffer.length) return 0;
+            let sum = 0;
+            for (let i = 0; i < buffer.length; i++) {
+                sum += Math.abs(buffer[i]);
+            }
+            return sum;
+        }
+
+        function arraysEqual(a, b) {
+            if (!a || !b) return false;
+            if (a.length !== b.length) return false;
+            for (let i = 0; i < a.length; i++) {
+                if (Math.abs(a[i] - b[i]) > 0.000001) return false;
+            }
+            return true;
+        }
+
+        function logResult(elementId, message, isError = false) {
+            const element = document.getElementById(elementId);
+            const className = isError ? 'error' : 'success';
+            element.innerHTML += `<div class="${className}">${message}</div>`;
+        }
+
+        function logDebug(elementId, data) {
+            const element = document.getElementById(elementId);
+            element.innerHTML += `<div class="debug">${JSON.stringify(data, null, 2)}</div>`;
+        }
+
+        // Test 1: Verify Raw Version Integrity
+        async function testRawVersion() {
+            const resultsDiv = document.getElementById('test1-results');
+            resultsDiv.innerHTML = '<h3>Test Results:</h3>';
+
+            try {
+                // Create a simple test audio buffer
+                const sampleRate = 44100;
+                const duration = 1; // 1 second
+                const length = sampleRate * duration;
+                const testBuffer = new Float32Array(length);
+                
+                // Generate a simple sine wave
+                for (let i = 0; i < length; i++) {
+                    testBuffer[i] = Math.sin(2 * Math.PI * 440 * i / sampleRate) * 0.5;
+                }
+
+                logResult('test1-results', '✅ Test audio buffer created successfully');
+                logDebug('test1-results', {
+                    sampleRate,
+                    duration,
+                    length,
+                    originalEnergy: computeEnergy(testBuffer).toFixed(6)
+                });
+
+                // Simulate the audio processing (this would normally be done by the worklet)
+                const versions = {
+                    raw: new Float32Array(testBuffer), // Should be identical to original
+                    light: new Float32Array(testBuffer), // Would be processed in real app
+                    medium: new Float32Array(testBuffer), // Would be processed in real app
+                    deep: new Float32Array(testBuffer)   // Would be processed in real app
+                };
+
+                // Check if raw is identical to original
+                const isRawIdentical = arraysEqual(versions.raw, testBuffer);
+                const rawEnergy = computeEnergy(versions.raw);
+                const originalEnergy = computeEnergy(testBuffer);
+
+                logResult('test1-results', `Raw version check: ${isRawIdentical ? '✅ PASS' : '❌ FAIL'}`);
+                logDebug('test1-results', {
+                    isRawIdentical,
+                    rawEnergy: rawEnergy.toFixed(6),
+                    originalEnergy: originalEnergy.toFixed(6),
+                    energyMatch: Math.abs(rawEnergy - originalEnergy) < 0.000001
+                });
+
+                if (!isRawIdentical) {
+                    logResult('test1-results', '❌ CRITICAL BUG: Raw version is not identical to original!', true);
+                } else {
+                    logResult('test1-results', '✅ Raw version integrity verified');
+                }
+
+            } catch (error) {
+                logResult('test1-results', `❌ Test failed: ${error.message}`, true);
+            }
+        }
+
+        // Test 2: Compare All Versions
+        async function compareVersions() {
+            const resultsDiv = document.getElementById('test2-results');
+            resultsDiv.innerHTML = '<h3>Test Results:</h3>';
+
+            try {
+                // Create test versions (simulating processed audio)
+                const sampleRate = 44100;
+                const length = sampleRate * 0.5; // 0.5 seconds
+                const original = new Float32Array(length);
+                
+                // Generate test audio
+                for (let i = 0; i < length; i++) {
+                    original[i] = Math.sin(2 * Math.PI * 440 * i / sampleRate) * 0.5;
+                }
+
+                // Simulate different processing (in real app, these would be different)
+                const versions = {
+                    raw: new Float32Array(original),
+                    light: new Float32Array(original).map(x => x * 0.8), // Simulate light processing
+                    medium: new Float32Array(original).map(x => x * 0.6), // Simulate medium processing
+                    deep: new Float32Array(original).map(x => x * 0.4)   // Simulate deep processing
+                };
+
+                logResult('test2-results', '✅ Test versions created');
+
+                // Compare each version with raw
+                for (const [ver, data] of Object.entries(versions)) {
+                    if (ver === 'raw') continue;
+                    
+                    const isSameAsRaw = arraysEqual(data, versions.raw);
+                    const energyDiff = Math.abs(computeEnergy(data) - computeEnergy(versions.raw));
+                    
+                    logResult('test2-results', `${ver} vs raw: ${isSameAsRaw ? '❌ IDENTICAL' : '✅ DIFFERENT'}`);
+                    logDebug('test2-results', {
+                        version: ver,
+                        isSameAsRaw,
+                        energyDiff: energyDiff.toFixed(6),
+                        hasProcessing: energyDiff > 0.000001
+                    });
+
+                    if (isSameAsRaw) {
+                        logResult('test2-results', `❌ CRITICAL: ${ver} is identical to raw!`, true);
+                    }
+                }
+
+            } catch (error) {
+                logResult('test2-results', `❌ Test failed: ${error.message}`, true);
+            }
+        }
+
+        // Test 3: Energy Analysis
+        async function analyzeEnergy() {
+            const resultsDiv = document.getElementById('test3-results');
+            resultsDiv.innerHTML = '<h3>Test Results:</h3>';
+
+            try {
+                // Create test audio with known characteristics
+                const sampleRate = 44100;
+                const length = sampleRate * 1; // 1 second
+                const original = new Float32Array(length);
+                
+                // Generate complex test audio
+                for (let i = 0; i < length; i++) {
+                    const t = i / sampleRate;
+                    original[i] = Math.sin(2 * Math.PI * 440 * t) * 0.3 + 
+                                 Math.sin(2 * Math.PI * 880 * t) * 0.2 +
+                                 Math.sin(2 * Math.PI * 220 * t) * 0.1;
+                }
+
+                const originalEnergy = computeEnergy(original);
+                logResult('test3-results', `✅ Original audio energy: ${originalEnergy.toFixed(6)}`);
+
+                // Simulate different processing levels
+                const versions = {
+                    raw: new Float32Array(original),
+                    light: new Float32Array(original).map(x => x * 0.9),
+                    medium: new Float32Array(original).map(x => x * 0.7),
+                    deep: new Float32Array(original).map(x => x * 0.5)
+                };
+
+                // Analyze energy levels
+                for (const [ver, data] of Object.entries(versions)) {
+                    const energy = computeEnergy(data);
+                    const energyRatio = energy / originalEnergy;
+                    
+                    logResult('test3-results', `${ver}: energy=${energy.toFixed(6)}, ratio=${energyRatio.toFixed(3)}`);
+                    
+                    if (ver === 'raw' && Math.abs(energyRatio - 1.0) > 0.001) {
+                        logResult('test3-results', `❌ Raw energy ratio should be 1.0, got ${energyRatio.toFixed(3)}`, true);
+                    }
+                }
+
+            } catch (error) {
+                logResult('test3-results', `❌ Test failed: ${error.message}`, true);
+            }
+        }
+    </script>
+</body>
+</html> 

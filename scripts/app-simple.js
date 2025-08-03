@@ -991,6 +991,39 @@ class VoiceQuizApp {
         
         const { leftVersion, rightVersion } = currentTrial.comparisonSetup;
         
+        // 🔍 DEBUG: Check if raw version is truly unprocessed
+        console.log('🔍 DEBUG: Checking raw version integrity...');
+        if (versions.raw) {
+            const rawEnergy = this._computeEnergy(versions.raw);
+            console.log('🔍 Raw version check:', {
+                type: typeof versions.raw,
+                isFloat32Array: versions.raw instanceof Float32Array,
+                length: versions.raw?.length,
+                energy: rawEnergy.toFixed(6),
+                hasData: versions.raw && versions.raw.length > 0
+            });
+            
+            // Compare with other versions to see if raw is actually processed
+            for (const [ver, data] of Object.entries(versions)) {
+                if (ver === 'raw') continue;
+                const verEnergy = this._computeEnergy(data);
+                const energyDiff = Math.abs(rawEnergy - verEnergy);
+                const isSameAsRaw = this._arraysEqual(data, versions.raw);
+                
+                console.log(`🔍 Raw vs ${ver}:`, {
+                    energyDiff: energyDiff.toFixed(6),
+                    isSameAsRaw,
+                    rawIsActuallyProcessed: isSameAsRaw && ver !== 'raw'
+                });
+                
+                if (isSameAsRaw && ver !== 'raw') {
+                    console.error(`❌ CRITICAL BUG: Raw version is identical to ${ver} - raw is being processed!`);
+                }
+            }
+        } else {
+            console.error('❌ CRITICAL BUG: No raw version found in versions object!');
+        }
+        
         // 🔍 DEBUG: Let's see exactly what we're working with
         console.log('🔍 Raw versions object:', versions);
         console.log('🔍 Version keys:', Object.keys(versions));
@@ -1070,6 +1103,25 @@ class VoiceQuizApp {
         
         // Return clean randomized object with left/right keys mapping to Float32Arrays
         return randomized;
+    }
+
+    // Helper methods for debugging
+    _computeEnergy(buffer) {
+        if (!buffer || !buffer.length) return 0;
+        let sum = 0;
+        for (let i = 0; i < buffer.length; i++) {
+            sum += Math.abs(buffer[i]);
+        }
+        return sum;
+    }
+
+    _arraysEqual(a, b) {
+        if (!a || !b) return false;
+        if (a.length !== b.length) return false;
+        for (let i = 0; i < a.length; i++) {
+            if (Math.abs(a[i] - b[i]) > 0.000001) return false;
+        }
+        return true;
     }
 
     async deleteOriginalRecording() {
@@ -1748,14 +1800,30 @@ class VoiceQuizApp {
             // Get trial information
             const currentTrial = this.trials[this.currentQuestion];
             const selectedChoice = this.selectedChoice;
-            const trialType = currentTrial.type;
             const isCatch = currentTrial.isCatch;
             
-            // Record the response
+            // 🔧 FIXED: Get the actual processing type that was selected
+            let actualProcessingType = currentTrial.type; // Default fallback
+            
+            // Get the actual version that was selected from the session data
+            const currentQuestionData = window.voiceQuizApp.session.questions[this.currentQuestion];
+            if (currentQuestionData && currentQuestionData.selectedVersion) {
+                actualProcessingType = currentQuestionData.selectedVersion;
+                console.log(`🔧 FIXED: Actual processing type for question ${this.currentQuestion + 1}:`, {
+                    uiChoice: selectedChoice,
+                    actualVersion: currentQuestionData.selectedVersion,
+                    trialType: currentTrial.type,
+                    isCatch: isCatch
+                });
+            } else {
+                console.warn(`⚠️ No selectedVersion found for question ${this.currentQuestion + 1}, using trial type as fallback`);
+            }
+            
+            // Record the response with CORRECT actual processing type
             await window.userManager.recordResponse(
                 this.currentQuestion,
                 selectedChoice,
-                trialType,
+                actualProcessingType,  // 🔧 FIXED: Use actual processing type, not trial type
                 responseTime,
                 feedback,
                 isCatch

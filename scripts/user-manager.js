@@ -354,12 +354,20 @@ class UserManager {
 
     async recordResponse(questionId, selectedChoice, trialType, responseTime, feedback = {}, isCatch = false) {
         try {
+            // 🔍 DEBUG: Verify we're recording the correct actual processing type
+            console.log(`🔍 recordResponse debug for question ${questionId + 1}:`, {
+                selectedChoice,
+                trialType, // This should now be the actual processing type (raw, light, medium, deep)
+                isCatch,
+                responseTime
+            });
+            
             const response = {
                 userEmail: this.currentUser.email,
                 sessionId: this.sessionId,
                 questionId: questionId,
                 selectedChoice: selectedChoice,         // 'left' or 'right'
-                trialType: trialType,                   // 'light', 'medium', 'deep', or 'raw'
+                trialType: trialType,                   // 🔧 FIXED: Now contains actual processing type (raw, light, medium, deep)
                 isCatch: isCatch,                       // Whether this was a catch trial
                 responseTime: responseTime,             // Time to make decision
                 feedback: feedback,                     // Tags and text feedback
@@ -375,7 +383,7 @@ class UserManager {
                 localStorage.setItem('voiceQuiz_sessions', JSON.stringify(sessions));
             }
 
-            console.log('Response recorded:', response);
+            console.log('✅ Response recorded with correct actual processing type:', response);
             return response;
 
         } catch (error) {
@@ -540,7 +548,7 @@ class UserManager {
             questionId: index,
             questionText: window.voiceQuizApp?.questions?.[index]?.text || `Question ${index + 1}`,
             selectedVersion: response.selectedVersion, // A, B, C, or D
-            actualProcessingType: this.versionOrder[response.selectedVersion], // raw, light, medium, deep
+            actualProcessingType: response.trialType, // 🔧 FIXED: Use trialType which now contains the actual processing type
             selectionLatency: response.selectionLatency || 0, // Time between audio end and selection
             playbackTimes: response.playbackTimes || { A: 0, B: 0, C: 0, D: 0 }, // Duration each version was played
             replayCounts: response.replayCounts || { A: 0, B: 0, C: 0, D: 0 }, // How many times each was replayed
