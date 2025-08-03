@@ -183,35 +183,28 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
         return results;
       }
 
-      // Create and enable processors
+      // Create processors (Superpowered processors are enabled by default)
       const ps = new S.AutomaticVocalPitchCorrection(this.sampleRate, 1.0);
-      ps.enable(true); // ← CRITICAL: Must enable!
       
       const hp = new S.Filter(S.FilterType?.Resonant_Highpass ?? S.Filter_Resonant_Highpass, this.sampleRate);
-      hp.enable(true); // ← CRITICAL: Must enable!
       
       const lp = new S.Filter(S.FilterType?.Resonant_Lowpass ?? S.Filter_Resonant_Lowpass, this.sampleRate);
-      lp.enable(true); // ← CRITICAL: Must enable!
       
       const eq = new S.ThreeBandEQ(this.sampleRate);
-      eq.enable(true); // ← CRITICAL: Must enable!
       
       let comp = null;
       if (p.comp) {
         comp = new S.Compressor2(this.sampleRate);
-        comp.enable(true); // ← CRITICAL: Must enable!
       }
       
       let notch = null;
       if (p.notch) {
         notch = new S.Filter(S.FilterType?.Notch ?? S.Filter_Notch, this.sampleRate);
-        notch.enable(true); // ← CRITICAL: Must enable!
       }
       
       let vibro = null;
       if (p.vibro) {
         vibro = new S.Filter(S.FilterType?.Peaking ?? S.Filter_Peaking, this.sampleRate);
-        vibro.enable(true); // ← CRITICAL: Must enable!
       }
 
       // 🔧 DEBUG: Check processor state

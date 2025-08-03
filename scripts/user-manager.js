@@ -359,7 +359,122 @@ class UserManager {
                 selectedChoice,
                 trialType, // This should now be the actual processing type (raw, light, medium, deep)
                 isCatch,
-                responseTime
+(index):64 cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation
+(anonymous) @ (index):64
+user-manager.js:41 Device detected: Objectplatform: "Windows"type: "laptop"[[Prototype]]: Object
+user-manager.js:183 User data loaded: Objectconsent: truedeviceInfo: {userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWeb…KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', platform: 'Win32', language: 'en-US', screenWidth: 1536, screenHeight: 864, …}email: "mmw@yahoo.com"firstName: "mmmmm"id: "user_1754261322873_8kvg6xsle"lastName: "mmmmmmm"registrationDate: "2025-08-03T22:48:42.873Z"studyProgress: {currentQuestion: 1, totalQuestions: 7, responses: Array(0), startTime: '2025-08-03T22:48:42.902Z', completed: true, …}[[Prototype]]: Object
+user-manager.js:61 User Manager initialized
+device-aware.js:8 Device-aware processor initialized: Object
+audio-format-fix.js:111 🎯 Audio format fixes loaded!
+audio-format-fix.js:112 💡 Try: fixProcessedAudioFormats() - to convert all versions
+audio-format-fix.js:113 💡 Try: window.voiceQuizApp.playVersionWebAudio("B") - to test Web Audio API playback
+device-aware.js:309 Device analytics: Object
+app-simple.js:256 🎯 Generating counter-balanced trial set...
+app-simple.js:319 ✅ Generated trial set: Object
+app-simple.js:346 Counter-balanced versionOrder initialized: Object
+app-simple.js:353 AudioWorklet support: true
+app-simple.js:354 WebAssembly support: true
+app-simple.js:2815 🎯 Voice Quiz App initialized with version mapping support
+app-simple.js:2816 💡 Use window.debugVersionMapping() to check version mapping state
+content.js:1 [MindStudio][Content] Initializing content script
+app-simple.js:359 Microphone permission check: Object
+app-simple.js:376 AudioProcessor available (will create instance when needed)
+app-simple.js:387 Voice Quiz App initialized successfully
+user-manager.js:139 Counter-balanced version order initialized: {A: 'raw', B: 'light', C: 'medium', D: 'deep'}
+user-manager.js:114 User registered successfully: {id: 'user_1754263429449_tgyt7is50', firstName: 'da', lastName: 'da', email: 'dadadadadada@yahoo.com', consent: true, …}
+app-simple.js:575 User registered successfully
+app-simple.js:639 📝 showRecordingPage() called for question: 0
+app-simple.js:1710 🔇 Stopping all audio playback...
+app-simple.js:1769 ✅ All audio stopped and UI reset
+app-simple.js:2595 📊 Memory Status [Start of Question]:
+app-simple.js:2596    - Tracked URLs: 0
+app-simple.js:2597    - Tracked Blobs: 0
+app-simple.js:2598    - Current Recording: No
+app-simple.js:2599    - Processed Versions: 0
+app-simple.js:2600    - Currently Playing: No
+app-simple.js:2601    - Current Audio URL: No
+app-simple.js:2605    - Memory Usage: 7MB / 8MB
+app-simple.js:2608    - Question: 1/10
+app-simple.js:726 🎙️ Starting recording...
+audio-recorder.js:96 Initializing audio recorder...
+audio-recorder.js:69 Audio recorder initialized successfully
+audio-recorder.js:115 Creating MediaRecorder with options: {mimeType: 'audio/webm;codecs=opus', audioBitsPerSecond: 128000}
+audio-recorder.js:140 Recording started successfully
+app-simple.js:741 ✅ Recording started successfully
+audio-recorder.js:123 Audio chunk received, size: 1128
+audio-recorder.js:123 Audio chunk received, size: 1932
+audio-recorder.js:123 Audio chunk received, size: 1932
+audio-recorder.js:123 Audio chunk received, size: 1932
+audio-recorder.js:123 Audio chunk received, size: 1932
+audio-recorder.js:123 Audio chunk received, size: 1932
+audio-recorder.js:123 Audio chunk received, size: 1932
+audio-recorder.js:123 Audio chunk received, size: 1932
+audio-recorder.js:123 Audio chunk received, size: 1932
+audio-recorder.js:123 Audio chunk received, size: 1932
+audio-recorder.js:123 Audio chunk received, size: 1932
+audio-recorder.js:123 Audio chunk received, size: 1932
+audio-recorder.js:123 Audio chunk received, size: 1932
+audio-recorder.js:123 Audio chunk received, size: 1932
+audio-recorder.js:123 Audio chunk received, size: 1932
+audio-recorder.js:123 Audio chunk received, size: 1932
+audio-recorder.js:123 Audio chunk received, size: 1932
+app-simple.js:758 ⏹️ Stopping recording...
+audio-recorder.js:123 Audio chunk received, size: 965
+audio-recorder.js:186 Recording completed successfully, blob size: 33005
+app-simple.js:770 ✅ Recording stopped successfully
+app-simple.js:884 🔄 processRecording() started for question: 0
+app-simple.js:896 Creating AudioProcessor instance for processing...
+app-simple.js:902 Initializing AudioProcessor for processing...
+audio-processor.js:20 🎵 Initializing AudioProcessor...
+audio-processor.js:25 ✅ AudioContext created with sample rate: 48000
+audio-processor.js:29 🎵 Loading Superpowered SDK...
+audio-processor.js:31 ✅ Superpowered SDK loaded
+Superpowered.js:434 WASM memory 874534804112: 512 kb stack, 883 kb heap, 2 mb total.
+audio-processor.js:38 ✅ Superpowered WebAssembly initialized
+audio-processor.js:45 ✅ Superpowered WebAudio manager created
+audio-processor.js:48 🎵 Creating AudioWorklet with corrected API...
+Superpowered.js:434 WASM memory 1361694113990: 512 kb stack, 883 kb heap, 2 mb total.
+voice-processor-worklet.js:16 🔍 Superpowered diagnostic: {available: true, version: 'version unknown', sampleRate: 48000}
+voice-processor-worklet.js:37 ✅ Superpowered AudioWorklet initialized successfully
+audio-processor.js:75 📨 Worklet message received: {event: 'ready'}
+audio-processor.js:78 🎵 VoiceProcessor worklet ready
+audio-processor.js:63 ✅ AudioWorklet created (not connected to destination for offline processing)
+audio-processor.js:65 ✅ AudioProcessor initialized successfully with Superpowered 2.7.x
+app-simple.js:905 AudioProcessor initialized with AudioWorklet
+app-simple.js:918 Using AudioWorklet processing
+audio-processor.js:102 🎵 Processing audio with Superpowered AudioWorklet
+voice-processor-worklet.js:128 🔍 Original input energy: 5462.819686
+voice-processor-worklet.js:133 🔧 Raw version created: {length: 97920, energy: '5462.819686', isIdenticalToInput: true}
+voice-processor-worklet.js:144 🔍 Raw version check: {rawEnergy: '5462.819686', originalEnergy: '5462.819686', energyMatch: true, isIdentical: true, rawLength: 97920, …}
+voice-processor-worklet.js:160 🔧 Skipping raw processing - keeping pristine copy
+voice-processor-worklet.js:165 [light] params: {"hpFreq":300,"lpFreq":1200,"shelfLow":{"freq":500,"gain":3,"q":1},"shelfHigh":{"freq":2000,"gain":-3,"q":1},"pitchCents":-200,"formant":1,"comp":{"ratio":1.5,"threshold":-12,"knee":3},"notch":null,"vibro":null}
+voice-processor-worklet.js:177 [light] energy ▶ input: 5462.819686
+voice-processor-worklet.js:52 Worklet error: TypeError: ps.enable is not a function
+    at VoiceProcessor._makeVersions (voice-processor-worklet.js:188:10)
+    at VoiceProcessor.onMessageFromMainScope (voice-processor-worklet.js:46:31)
+    at SuperpoweredAudioWorkletProcessor.port.onmessage (Superpowered.js:687:29)
+onMessageFromMainScope @ voice-processor-worklet.js:52
+SuperpoweredAudioWorkletProcessor.port.onmessage @ Superpowered.js:687
+audio-processor.js:75 📨 Worklet message received: {requestId: 1754263438683.73, error: 'ps.enable is not a function'}
+app-simple.js:963 Processing error: Error: ps.enable is not a function
+    at AudioProcessor.handleWorkletMessage (audio-processor.js:88:16)
+    at audio-processor.js:54:16
+    at node.port.onmessage (Superpowered.js:664:24)
+processRecording @ app-simple.js:963
+await in processRecording
+stopRecording @ app-simple.js:773
+await in stopRecording
+toggleRecording @ app-simple.js:700
+(anonymous) @ app-simple.js:417
+app-simple.js:2136 App Error: Failed to process audio. Please try recording again.
+showError @ app-simple.js:2136
+processRecording @ app-simple.js:964
+await in processRecording
+stopRecording @ app-simple.js:773
+await in stopRecording
+toggleRecording @ app-simple.js:700
+(anonymous) @ app-simple.js:417
+app-simple.js:968 🔄 processRecording() completed for question: 0
             });
             
             const response = {

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Superpowered Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .success { background-color: #d4edda; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; border: 1px solid #f5c6cb; }
+        .info { background-color: #d1ecf1; border: 1px solid #bee5eb; }
+        button { padding: 10px 20px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Quick Superpowered SDK Test</h1>
+    
+    <div id="status" class="status info">
+        Click "Test Superpowered" to check if the SDK loads properly.
+    </div>
+    
+    <button onclick="testSuperpowered()">Test Superpowered</button>
+    <button onclick="testAudioProcessor()">Test AudioProcessor</button>
+    <button onclick="clearLogs()">Clear Console</button>
+
+    <script>
+        async function testSuperpowered() {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = 'status info';
+            statusDiv.innerHTML = 'Testing Superpowered SDK loading...';
+            
+            try {
+                console.log('🔧 Testing Superpowered SDK loading...');
+                
+                // Test 1: Import Superpowered
+                console.log('📦 Importing Superpowered...');
+                const { SuperpoweredGlue, SuperpoweredWebAudio } = await import('./lib/Superpowered.js');
+                console.log('✅ Superpowered imported successfully');
+                
+                // Test 2: Initialize Superpowered
+                console.log('🔧 Initializing Superpowered...');
+                const superpowered = await SuperpoweredGlue.Instantiate(
+                    'ExampleLicenseKey-WillExpire-OnNextUpdate',
+                    './lib/SuperpoweredWebAssembly.wasm'
+                );
+                console.log('✅ Superpowered initialized successfully');
+                console.log('📦 Available classes:', Object.keys(superpowered));
+                
+                statusDiv.className = 'status success';
+                statusDiv.innerHTML = `
+                    <h3>✅ Superpowered SDK Test Successful!</h3>
+                    <p><strong>Import:</strong> ✅ Success</p>
+                    <p><strong>Initialization:</strong> ✅ Success</p>
+                    <p><strong>Available Classes:</strong> ${Object.keys(superpowered).length}</p>
+                    <p>Check console for detailed logs.</p>
+                `;
+                
+            } catch (error) {
+                console.error('❌ Superpowered test failed:', error);
+                
+                statusDiv.className = 'status error';
+                statusDiv.innerHTML = `
+                    <h3>❌ Superpowered SDK Test Failed</h3>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                    <p><strong>Stack:</strong></p>
+                    <pre>${error.stack}</pre>
+                `;
+            }
+        }
+
+        async function testAudioProcessor() {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = 'status info';
+            statusDiv.innerHTML = 'Testing AudioProcessor initialization...';
+            
+            try {
+                console.log('🔧 Testing AudioProcessor...');
+                
+                // Import AudioProcessor
+                const { AudioProcessor } = await import('./scripts/audio-processor.js');
+                console.log('✅ AudioProcessor imported');
+                
+                // Create and initialize AudioProcessor
+                const audioProcessor = new AudioProcessor();
+                console.log('✅ AudioProcessor created');
+                
+                await audioProcessor.initialize();
+                console.log('✅ AudioProcessor initialized successfully');
+                
+                statusDiv.className = 'status success';
+                statusDiv.innerHTML = `
+                    <h3>✅ AudioProcessor Test Successful!</h3>
+                    <p><strong>Import:</strong> ✅ Success</p>
+                    <p><strong>Creation:</strong> ✅ Success</p>
+                    <p><strong>Initialization:</strong> ✅ Success</p>
+                    <p>Check console for detailed logs.</p>
+                `;
+                
+                // Cleanup
+                audioProcessor.cleanup();
+                
+            } catch (error) {
+                console.error('❌ AudioProcessor test failed:', error);
+                
+                statusDiv.className = 'status error';
+                statusDiv.innerHTML = `
+                    <h3>❌ AudioProcessor Test Failed</h3>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                    <p><strong>Stack:</strong></p>
+                    <pre>${error.stack}</pre>
+                `;
+            }
+        }
+
+        function clearLogs() {
+            console.clear();
+            console.log('🔧 Console cleared');
+        }
+
+        // Auto-run basic test on load
+        window.addEventListener('load', () => {
+            console.log('🔧 Quick Superpowered Test Page Loaded');
+        });
+    </script>
+</body>
+</html> 
