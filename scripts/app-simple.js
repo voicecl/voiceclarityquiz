@@ -2178,6 +2178,157 @@ class VoiceQuizApp {
         }
     }
 
+    // 🔧 NEW: Comprehensive trial logic verification
+    verifyTrialLogic() {
+        console.log('🔍 === TRIAL LOGIC VERIFICATION ===');
+        
+        if (!this.trials || this.trials.length !== 10) {
+            console.error('❌ INVALID: Expected exactly 10 trials, got:', this.trials?.length || 0);
+            return false;
+        }
+        
+        let verification = {
+            totalTrials: this.trials.length,
+            catchTrials: 0,
+            realTrials: 0,
+            processingModes: {},
+            rawSideDistribution: { left: 0, right: 0 },
+            errors: []
+        };
+        
+        // Analyze each trial
+        this.trials.forEach((trial, index) => {
+            const { type, isCatch, comparisonSetup } = trial;
+            const { leftVersion, rightVersion } = comparisonSetup || {};
+            
+            console.log(`🔍 Question ${index + 1}:`, {
+                type,
+                isCatch,
+                leftVersion,
+                rightVersion
+            });
+            
+            // Count trial types
+            if (isCatch) {
+                verification.catchTrials++;
+            } else {
+                verification.realTrials++;
+                verification.processingModes[type] = (verification.processingModes[type] || 0) + 1;
+            }
+            
+            // Verify exactly one raw version per trial
+            const hasRawLeft = leftVersion === 'raw';
+            const hasRawRight = rightVersion === 'raw';
+            const rawCount = (hasRawLeft ? 1 : 0) + (hasRawRight ? 1 : 0);
+            
+            if (rawCount !== 1) {
+                verification.errors.push(`Question ${index + 1}: Expected exactly 1 raw version, got ${rawCount}`);
+            }
+            
+            // Track raw side distribution
+            if (hasRawLeft) verification.rawSideDistribution.left++;
+            if (hasRawRight) verification.rawSideDistribution.right++;
+            
+            // Verify catch trial is raw vs raw
+            if (isCatch && (leftVersion !== 'raw' || rightVersion !== 'raw')) {
+                verification.errors.push(`Question ${index + 1}: Catch trial should be raw vs raw, got ${leftVersion} vs ${rightVersion}`);
+            }
+            
+            // Verify non-catch trials have one processed version
+            if (!isCatch) {
+                const hasProcessed = leftVersion !== 'raw' || rightVersion !== 'raw';
+                if (!hasProcessed) {
+                    verification.errors.push(`Question ${index + 1}: Non-catch trial should have one processed version`);
+                }
+            }
+        });
+        
+        // Verify catch trial count
+        if (verification.catchTrials !== 1) {
+            verification.errors.push(`Expected exactly 1 catch trial, got ${verification.catchTrials}`);
+        }
+        
+        // Verify processing mode distribution
+        const expectedModes = { light: 3, medium: 3, deep: 3 };
+        for (const [mode, expected] of Object.entries(expectedModes)) {
+            const actual = verification.processingModes[mode] || 0;
+            if (actual !== expected) {
+                verification.errors.push(`Expected ${expected} ${mode} trials, got ${actual}`);
+            }
+        }
+        
+        // Verify raw side distribution is balanced
+        const totalRealTrials = verification.realTrials;
+        const rawOnLeft = verification.rawSideDistribution.left;
+        const rawOnRight = verification.rawSideDistribution.right;
+        
+        console.log('📊 Trial Distribution Analysis:', {
+            totalTrials: verification.totalTrials,
+            catchTrials: verification.catchTrials,
+            realTrials: verification.realTrials,
+            processingModes: verification.processingModes,
+            rawSideDistribution: verification.rawSideDistribution,
+            rawBalance: `${rawOnLeft}/${totalRealTrials} left, ${rawOnRight}/${totalRealTrials} right`
+        });
+        
+        if (verification.errors.length > 0) {
+            console.error('❌ TRIAL LOGIC ERRORS FOUND:');
+            verification.errors.forEach(error => console.error('  -', error));
+            return false;
+        } else {
+            console.log('✅ TRIAL LOGIC VERIFICATION PASSED');
+            return true;
+        }
+    }
+
+    // 🔧 NEW: Debug all trial mappings
+    debugAllTrialMappings() {
+        console.log('🔍 === ALL TRIAL MAPPINGS DEBUG ===');
+        
+        if (!this.trials) {
+            console.error('❌ No trials found');
+            return;
+        }
+        
+        console.log('📋 Complete Trial Breakdown:');
+        this.trials.forEach((trial, index) => {
+            const { type, isCatch, comparisonSetup } = trial;
+            const { leftVersion, rightVersion, correctAnswer } = comparisonSetup || {};
+            
+            console.log(`  Question ${index + 1}:`, {
+                type,
+                isCatch,
+                leftVersion,
+                rightVersion,
+                correctAnswer,
+                description: isCatch ? 'CATCH TRIAL (raw vs raw)' : `${type} vs raw`
+            });
+        });
+        
+        // Show processing mode distribution
+        const modeCounts = {};
+        this.trials.forEach(trial => {
+            if (!trial.isCatch) {
+                modeCounts[trial.type] = (modeCounts[trial.type] || 0) + 1;
+            }
+        });
+        
+        console.log('📊 Processing Mode Distribution:', modeCounts);
+        
+        // Show raw side distribution
+        const rawSideCounts = { left: 0, right: 0 };
+        this.trials.forEach(trial => {
+            if (!trial.isCatch) {
+                if (trial.comparisonSetup.leftVersion === 'raw') rawSideCounts.left++;
+                if (trial.comparisonSetup.rightVersion === 'raw') rawSideCounts.right++;
+            }
+        });
+        
+        console.log('📊 Raw Side Distribution:', rawSideCounts);
+        
+        console.log('🔍 === END ALL TRIAL MAPPINGS DEBUG ===');
+    }
+
      // ANALYTICS: Track selection behavior and detect gaming patterns
      trackSelectionBehavior(version, selectionTime) {
         // Calculate selection latency (time since last audio play)
@@ -2803,7 +2954,7 @@ class VoiceQuizApp {
 document.addEventListener('DOMContentLoaded', () => {
     window.voiceQuizApp = new VoiceQuizApp();
     
-    // Add global debug function for testing version mapping
+    // Add global debug functions for testing trial logic
     window.debugVersionMapping = () => {
         if (window.voiceQuizApp) {
             window.voiceQuizApp.debugVersionMapping();
@@ -2812,7 +2963,27 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
-    console.log('🎯 Voice Quiz App initialized with version mapping support');
-    console.log('💡 Use window.debugVersionMapping() to check version mapping state');
+    window.debugAllTrialMappings = () => {
+        if (window.voiceQuizApp) {
+            window.voiceQuizApp.debugAllTrialMappings();
+        } else {
+            console.log('VoiceQuizApp not initialized yet');
+        }
+    };
+    
+    window.verifyTrialLogic = () => {
+        if (window.voiceQuizApp) {
+            return window.voiceQuizApp.verifyTrialLogic();
+        } else {
+            console.log('VoiceQuizApp not initialized yet');
+            return false;
+        }
+    };
+    
+    console.log('🎯 Voice Quiz App initialized with trial logic verification support');
+    console.log('💡 Available debug functions:');
+    console.log('  - window.debugVersionMapping() - Check current version mapping');
+    console.log('  - window.debugAllTrialMappings() - Show all trial breakdowns');
+    console.log('  - window.verifyTrialLogic() - Verify trial logic compliance');
 });
 

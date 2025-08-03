@@ -228,9 +228,24 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
         formantCorrection: p.formant
       });
       const beforePitchEnergy = energyOf(buf);
+      
+      // 🔧 FIXED: Try different approach - use Superpowered buffer
+      const superpoweredBuf = new S.Float32Buffer(buf.length);
+      for (let i = 0; i < buf.length; i++) {
+        superpoweredBuf.data[i] = buf[i];
+      }
+      
       ps.pitchShift = centsToRatio(p.pitchCents);
       ps.formantCorrection = p.formant;
-      ps.process(buf, buf);
+      ps.process(superpoweredBuf, superpoweredBuf);
+      
+      // Copy back to original buffer
+      for (let i = 0; i < buf.length; i++) {
+        buf[i] = superpoweredBuf.data[i];
+      }
+      
+      superpoweredBuf.free();
+      
       const afterPitchEnergy = energyOf(buf);
       console.log(`[${ver}] energy ▶ pitch-shift:`, afterPitchEnergy.toFixed(6));
       
@@ -246,8 +261,23 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
         bufferLength: buf.length 
       });
       const beforeHpEnergy = energyOf(buf);
+      
+      // Use Superpowered buffer for high-pass
+      const hpBuf = new S.Float32Buffer(buf.length);
+      for (let i = 0; i < buf.length; i++) {
+        hpBuf.data[i] = buf[i];
+      }
+      
       hp.frequency = p.hpFreq;
-      hp.process(buf, buf);
+      hp.process(hpBuf, hpBuf);
+      
+      // Copy back to original buffer
+      for (let i = 0; i < buf.length; i++) {
+        buf[i] = hpBuf.data[i];
+      }
+      
+      hpBuf.free();
+      
       const afterHpEnergy = energyOf(buf);
       console.log(`[${ver}] energy ▶ high-pass:`, afterHpEnergy.toFixed(6));
       
@@ -262,8 +292,23 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
         bufferLength: buf.length 
       });
       const beforeLpEnergy = energyOf(buf);
+      
+      // Use Superpowered buffer for low-pass
+      const lpBuf = new S.Float32Buffer(buf.length);
+      for (let i = 0; i < buf.length; i++) {
+        lpBuf.data[i] = buf[i];
+      }
+      
       lp.frequency = p.lpFreq;
-      lp.process(buf, buf);
+      lp.process(lpBuf, lpBuf);
+      
+      // Copy back to original buffer
+      for (let i = 0; i < buf.length; i++) {
+        buf[i] = lpBuf.data[i];
+      }
+      
+      lpBuf.free();
+      
       const afterLpEnergy = energyOf(buf);
       console.log(`[${ver}] energy ▶ low-pass:`, afterLpEnergy.toFixed(6));
       
@@ -280,9 +325,24 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
         bufferLength: buf.length 
       });
       const beforeEqEnergy = energyOf(buf);
+      
+      // Use Superpowered buffer for EQ
+      const eqBuf = new S.Float32Buffer(buf.length);
+      for (let i = 0; i < buf.length; i++) {
+        eqBuf.data[i] = buf[i];
+      }
+      
       eq.lowGain = p.shelfLow.gain;
       eq.highGain = p.shelfHigh.gain;
-      eq.process(buf, buf);
+      eq.process(eqBuf, eqBuf);
+      
+      // Copy back to original buffer
+      for (let i = 0; i < buf.length; i++) {
+        buf[i] = eqBuf.data[i];
+      }
+      
+      eqBuf.free();
+      
       const afterEqEnergy = energyOf(buf);
       console.log(`[${ver}] energy ▶ EQ:`, afterEqEnergy.toFixed(6));
       
@@ -317,12 +377,27 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
           bufferLength: buf.length 
         });
         const beforeCompEnergy = energyOf(buf);
+        
+        // Use Superpowered buffer for compression
+        const compBuf = new S.Float32Buffer(buf.length);
+        for (let i = 0; i < buf.length; i++) {
+          compBuf.data[i] = buf[i];
+        }
+        
         comp.ratio = p.comp.ratio;
         comp.threshold = p.comp.threshold;
         if (p.comp.knee) comp.knee = p.comp.knee;
         comp.attack = 0.003;
         comp.release = 0.1;
-        comp.process(buf, buf);
+        comp.process(compBuf, compBuf);
+        
+        // Copy back to original buffer
+        for (let i = 0; i < buf.length; i++) {
+          buf[i] = compBuf.data[i];
+        }
+        
+        compBuf.free();
+        
         const afterCompEnergy = energyOf(buf);
         console.log(`[${ver}] energy ▶ compression:`, afterCompEnergy.toFixed(6));
         
