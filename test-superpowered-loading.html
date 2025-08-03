@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Superpowered Loading Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .warning { background-color: #fff3cd; border-color: #ffeaa7; }
+        button { padding: 10px 20px; margin: 5px; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Superpowered Loading Test</h1>
+    
+    <div class="test-section">
+        <h2>1. Superpowered Library Check</h2>
+        <button onclick="checkSuperpowered()">Check Superpowered Loading</button>
+        <div id="superpowered-status"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. AudioWorklet Test</h2>
+        <button onclick="testAudioWorklet()">Test AudioWorklet Creation</button>
+        <div id="worklet-status"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. Basic Processing Test</h2>
+        <button onclick="testBasicProcessing()">Test Basic Processing</button>
+        <div id="processing-status"></div>
+    </div>
+
+    <script>
+        async function checkSuperpowered() {
+            const statusDiv = document.getElementById('superpowered-status');
+            statusDiv.innerHTML = '<p>Checking Superpowered library...</p>';
+            
+            try {
+                // Check if Superpowered is available
+                const superpoweredAvailable = typeof Superpowered !== 'undefined';
+                
+                if (superpoweredAvailable) {
+                    console.log('✅ Superpowered available:', Superpowered);
+                    console.log('Superpowered version:', Superpowered.version || 'version unknown');
+                    
+                    statusDiv.innerHTML = `
+                        <div class="success">
+                            <h3>✅ Superpowered Loaded Successfully</h3>
+                            <p><strong>Available:</strong> ${superpoweredAvailable}</p>
+                            <p><strong>Version:</strong> ${Superpowered.version || 'version unknown'}</p>
+                            <p><strong>Constructor:</strong> ${typeof Superpowered}</p>
+                        </div>
+                    `;
+                } else {
+                    statusDiv.innerHTML = `
+                        <div class="error">
+                            <h3>❌ Superpowered Not Available</h3>
+                            <p>Superpowered library is not loaded. Check:</p>
+                            <ul>
+                                <li>CDN link is working</li>
+                                <li>HTTPS context (required for AudioWorklet)</li>
+                                <li>Browser supports AudioWorklet</li>
+                            </ul>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Error Checking Superpowered</h3>
+                        <p>Error: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function testAudioWorklet() {
+            const statusDiv = document.getElementById('worklet-status');
+            statusDiv.innerHTML = '<p>Testing AudioWorklet creation...</p>';
+            
+            try {
+                // Check if AudioWorklet is supported
+                if (!window.AudioWorklet) {
+                    statusDiv.innerHTML = `
+                        <div class="error">
+                            <h3>❌ AudioWorklet Not Supported</h3>
+                            <p>Your browser doesn't support AudioWorklet. Try Chrome, Firefox, or Safari.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Create audio context
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Try to load the worklet
+                await audioContext.audioWorklet.addModule('./scripts/voice-processor-worklet.js');
+                
+                statusDiv.innerHTML = `
+                    <div class="success">
+                        <h3>✅ AudioWorklet Loaded Successfully</h3>
+                        <p><strong>AudioContext:</strong> ${audioContext.state}</p>
+                        <p><strong>Sample Rate:</strong> ${audioContext.sampleRate}</p>
+                        <p><strong>Worklet Module:</strong> Loaded</p>
+                    </div>
+                `;
+                
+                audioContext.close();
+                
+            } catch (error) {
+                statusDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ AudioWorklet Error</h3>
+                        <p>Error: ${error.message}</p>
+                        <p>This might be due to:</p>
+                        <ul>
+                            <li>HTTPS required for AudioWorklet</li>
+                            <li>Superpowered library not loading</li>
+                            <li>Syntax error in worklet code</li>
+                        </ul>
+                    </div>
+                `;
+            }
+        }
+
+        async function testBasicProcessing() {
+            const statusDiv = document.getElementById('processing-status');
+            statusDiv.innerHTML = '<p>Testing basic audio processing...</p>';
+            
+            try {
+                // Create a simple test buffer
+                const sampleRate = 44100;
+                const duration = 0.1; // 100ms
+                const buffer = new Float32Array(sampleRate * duration);
+                
+                // Fill with a simple sine wave
+                const frequency = 440; // A4
+                for (let i = 0; i < buffer.length; i++) {
+                    buffer[i] = Math.sin(2 * Math.PI * frequency * i / sampleRate);
+                }
+                
+                console.log('Test buffer created:', {
+                    length: buffer.length,
+                    duration: duration,
+                    sampleRate: sampleRate,
+                    energy: buffer.reduce((sum, val) => sum + Math.abs(val), 0)
+                });
+                
+                statusDiv.innerHTML = `
+                    <div class="success">
+                        <h3>✅ Basic Processing Test Passed</h3>
+                        <p><strong>Buffer Length:</strong> ${buffer.length}</p>
+                        <p><strong>Duration:</strong> ${duration}s</p>
+                        <p><strong>Sample Rate:</strong> ${sampleRate}Hz</p>
+                        <p><strong>Energy:</strong> ${buffer.reduce((sum, val) => sum + Math.abs(val), 0).toFixed(6)}</p>
+                        <p>Check console for detailed logs.</p>
+                    </div>
+                `;
+                
+            } catch (error) {
+                statusDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Basic Processing Error</h3>
+                        <p>Error: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Auto-run basic checks on load
+        window.addEventListener('load', () => {
+            console.log('🔧 Superpowered Loading Test Page Loaded');
+            checkSuperpowered();
+        });
+    </script>
+</body>
+</html> 

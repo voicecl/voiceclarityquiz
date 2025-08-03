@@ -12,6 +12,19 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
     const sr = this.samplerate;
     const S = this.Superpowered;
     
+    // 🔍 DEBUG: Superpowered license check
+    console.log('🔍 Superpowered diagnostic:', {
+      available: typeof S !== 'undefined',
+      version: S?.version || 'version unknown',
+      sampleRate: sr
+    });
+    
+    if (typeof S === 'undefined') {
+      console.error('❌ CRITICAL: Superpowered not loaded! Audio processing will fail.');
+      this.sendMessageToMainScope({ event: "error", error: "Superpowered not loaded" });
+      return;
+    }
+    
     // Store Superpowered reference for use in processing
     this.S = S;
     this.sampleRate = sr;
@@ -20,6 +33,8 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
     // Allocate buffers
     this.bufIn = new S.Float32Buffer(this.chunkSize);
     this.bufOut = new S.Float32Buffer(this.chunkSize);
+    
+    console.log('✅ Superpowered AudioWorklet initialized successfully');
     
     // Notify main thread we're ready
     this.sendMessageToMainScope({ event: "ready" });
@@ -48,38 +63,61 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
   _makeVersions(inputBuffer) {
     const S = this.S;
     
-    // "More recent" specs
+    // 🔧 FIXED: Corrected processing configurations with proper Hz→cents conversion
     const specs = {
-      raw: null, // Pass-through
+      raw: null, // Pass-through - NEVER process this
       light: {
-        pitchCents: -60,
-        formant: 0.9,
-        hpFreq: 300, lpFreq: 1200,
-        shelfLow:  { freq: 500,  gain:  3 },
-        shelfHigh: { freq: 2000, gain: -3 },
-        comp:      null,
-        notch:     null,
-        vibro:     null
+        // Bandpass: 300-1200 Hz  
+        hpFreq: 300,
+        lpFreq: 1200,
+        
+        // EQ: +3dB at 500Hz, -3dB at 2kHz
+        shelfLow: { freq: 500, gain: 3, q: 1.0 },
+        shelfHigh: { freq: 2000, gain: -3, q: 1.0 },
+        
+        // FIXED: -60 Hz = ~-200 cents (not -60 cents!)
+        pitchCents: -200,
+        formant: 1.0,
+        
+        // ADDED: Missing light compression
+        comp: { ratio: 1.5, threshold: -12, knee: 3 },
+        notch: null,
+        vibro: null
       },
+      
       medium: {
-        pitchCents: -120,
-        formant:    1.0,
-        hpFreq:     250, lpFreq: 1300,
-        shelfLow:   { freq: 450,  gain:  4 },
-        shelfHigh:  { freq: 2200, gain: -4 },
-        comp:       { ratio: 2, threshold: -18, knee: 6 },  // gentle-knee
-        notch:      null,
-        vibro:      null
+        hpFreq: 300,
+        lpFreq: 1200,
+        shelfLow: { freq: 475, gain: 4, q: 1.2 },
+        shelfHigh: { freq: 2200, gain: -4, q: 1.0 },
+        
+        // FIXED: -105 Hz average = ~-350 cents
+        pitchCents: -350,
+        formant: 0.95,
+        
+        comp: { ratio: 2.5, threshold: -15, knee: 4 },
+        notch: null,
+        vibro: null
       },
+      
       deep: {
-        pitchCents: -100,
-        formant:    0.96,
-        hpFreq:     200, lpFreq: 1400,
-        shelfLow:   { freq: 400,  gain:  4 },
-        shelfHigh:  { freq: 2500, gain: -3 },
-        comp:       { ratio: 3, threshold: -20 },
-        notch:      { freq: 3000, q: 1.0 },
-        vibro:      null
+        // Narrower bandpass: 280-1000 Hz
+        hpFreq: 280,  
+        lpFreq: 1000,
+        
+        shelfLow: { freq: 450, gain: 5, q: 1.3 },
+        shelfHigh: { freq: 2400, gain: -5.5, q: 0.8 },
+        
+        // FIXED: -135 Hz average = ~-450 cents  
+        pitchCents: -450,
+        formant: 0.90,
+        
+        // Heavy compression for whispered effect
+        comp: { ratio: 4.0, threshold: -18, knee: 6 },
+        
+        // ADDED: Notch filter for spatial softening
+        notch: { freq: 3000, q: 2.0, gain: -3 },
+        vibro: null
       }
     };
 
@@ -89,8 +127,14 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
     const originalInput = new Float32Array(inputBuffer);
     console.log('🔍 Original input energy:', this._computeEnergy(originalInput).toFixed(6));
     
-    // Process raw version (pass-through) - CRITICAL: This should be truly unprocessed
-    results.raw = new Float32Array(inputBuffer);
+    // 🔧 FIXED: Create TRUE raw version FIRST (never process this!)
+    results.raw = new Float32Array(inputBuffer); // Pure copy - NEVER process this!
+    
+    console.log('🔧 Raw version created:', {
+      length: results.raw.length,
+      energy: this._computeEnergy(results.raw).toFixed(6),
+      isIdenticalToInput: this._arraysEqual(results.raw, originalInput)
+    });
     
     // 🔍 DEBUG: Verify raw is identical to original
     const rawEnergy = this._computeEnergy(results.raw);
@@ -110,9 +154,12 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
       console.error('❌ CRITICAL BUG: Raw version is not identical to original input!');
     }
     
-    // Process other versions
+    // 🔧 FIXED: Process other versions (raw is NEVER processed here)
     for (const [ver, p] of Object.entries(specs)) {
-      if (ver === 'raw') continue; // Already handled
+      if (ver === 'raw') {
+        console.log('🔧 Skipping raw processing - keeping pristine copy');
+        continue; // Already handled - NEVER process raw!
+      }
       
       // 1) Param dump
       console.log(`[${ver}] params:`, JSON.stringify(p));
@@ -129,25 +176,42 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
       const originalBuf = new Float32Array(buf); // Keep a copy for comparison
       console.log(`[${ver}] energy ▶ input:`, energyOf(buf).toFixed(6));
 
-      // Create processors
+      // 🔧 FIXED: Create processors with proper enabling
+      // Verify Superpowered is loaded
+      if (typeof S === 'undefined') {
+        console.error('❌ CRITICAL: Superpowered not loaded!');
+        return results;
+      }
+
+      // Create and enable processors
       const ps = new S.AutomaticVocalPitchCorrection(this.sampleRate, 1.0);
+      ps.enable(true); // ← CRITICAL: Must enable!
+      
       const hp = new S.Filter(S.FilterType?.Resonant_Highpass ?? S.Filter_Resonant_Highpass, this.sampleRate);
+      hp.enable(true); // ← CRITICAL: Must enable!
+      
       const lp = new S.Filter(S.FilterType?.Resonant_Lowpass ?? S.Filter_Resonant_Lowpass, this.sampleRate);
+      lp.enable(true); // ← CRITICAL: Must enable!
+      
       const eq = new S.ThreeBandEQ(this.sampleRate);
+      eq.enable(true); // ← CRITICAL: Must enable!
       
       let comp = null;
       if (p.comp) {
         comp = new S.Compressor2(this.sampleRate);
+        comp.enable(true); // ← CRITICAL: Must enable!
       }
       
       let notch = null;
       if (p.notch) {
         notch = new S.Filter(S.FilterType?.Notch ?? S.Filter_Notch, this.sampleRate);
+        notch.enable(true); // ← CRITICAL: Must enable!
       }
       
       let vibro = null;
       if (p.vibro) {
         vibro = new S.Filter(S.FilterType?.Peaking ?? S.Filter_Peaking, this.sampleRate);
+        vibro.enable(true); // ← CRITICAL: Must enable!
       }
 
       // 🔧 DEBUG: Check processor state
@@ -170,10 +234,17 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
         pitchShift: centsToRatio(p.pitchCents),
         formantCorrection: p.formant
       });
+      const beforePitchEnergy = energyOf(buf);
       ps.pitchShift = centsToRatio(p.pitchCents);
       ps.formantCorrection = p.formant;
       ps.process(buf, buf);
-      console.log(`[${ver}] energy ▶ pitch-shift:`, energyOf(buf).toFixed(6));
+      const afterPitchEnergy = energyOf(buf);
+      console.log(`[${ver}] energy ▶ pitch-shift:`, afterPitchEnergy.toFixed(6));
+      
+      // 🔍 VERIFY: Check if pitch shift had effect
+      if (Math.abs(afterPitchEnergy - beforePitchEnergy) < 0.000001) {
+        console.error(`❌ CRITICAL: Pitch shift had no effect on ${ver}!`);
+      }
 
       // 4) High-/Low-pass
       console.log('🎛️ About to apply high-pass filter:', { 
@@ -181,18 +252,32 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
         frequency: p.hpFreq,
         bufferLength: buf.length 
       });
+      const beforeHpEnergy = energyOf(buf);
       hp.frequency = p.hpFreq;
       hp.process(buf, buf);
-      console.log(`[${ver}] energy ▶ high-pass:`, energyOf(buf).toFixed(6));
+      const afterHpEnergy = energyOf(buf);
+      console.log(`[${ver}] energy ▶ high-pass:`, afterHpEnergy.toFixed(6));
+      
+      // 🔍 VERIFY: Check if high-pass had effect
+      if (Math.abs(afterHpEnergy - beforeHpEnergy) < 0.000001) {
+        console.error(`❌ CRITICAL: High-pass filter had no effect on ${ver}!`);
+      }
       
       console.log('🎛️ About to apply low-pass filter:', { 
         processorExists: !!lp, 
         frequency: p.lpFreq,
         bufferLength: buf.length 
       });
+      const beforeLpEnergy = energyOf(buf);
       lp.frequency = p.lpFreq;
       lp.process(buf, buf);
-      console.log(`[${ver}] energy ▶ low-pass:`, energyOf(buf).toFixed(6));
+      const afterLpEnergy = energyOf(buf);
+      console.log(`[${ver}] energy ▶ low-pass:`, afterLpEnergy.toFixed(6));
+      
+      // 🔍 VERIFY: Check if low-pass had effect
+      if (Math.abs(afterLpEnergy - beforeLpEnergy) < 0.000001) {
+        console.error(`❌ CRITICAL: Low-pass filter had no effect on ${ver}!`);
+      }
 
       // 5) Shelving/EQ
       console.log('🎛️ About to apply EQ:', { 
@@ -201,10 +286,17 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
         highGain: p.shelfHigh.gain,
         bufferLength: buf.length 
       });
+      const beforeEqEnergy = energyOf(buf);
       eq.lowGain = p.shelfLow.gain;
       eq.highGain = p.shelfHigh.gain;
       eq.process(buf, buf);
-      console.log(`[${ver}] energy ▶ EQ:`, energyOf(buf).toFixed(6));
+      const afterEqEnergy = energyOf(buf);
+      console.log(`[${ver}] energy ▶ EQ:`, afterEqEnergy.toFixed(6));
+      
+      // 🔍 VERIFY: Check if EQ had effect
+      if (Math.abs(afterEqEnergy - beforeEqEnergy) < 0.000001) {
+        console.error(`❌ CRITICAL: EQ had no effect on ${ver}!`);
+      }
 
       // 6) Notch (D only)
       if (p.notch) {
@@ -225,13 +317,26 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
 
       // 8) Compression (C & D)
       if (p.comp) {
+        console.log('🎛️ About to apply compression:', { 
+          processorExists: !!comp, 
+          ratio: p.comp.ratio,
+          threshold: p.comp.threshold,
+          bufferLength: buf.length 
+        });
+        const beforeCompEnergy = energyOf(buf);
         comp.ratio = p.comp.ratio;
         comp.threshold = p.comp.threshold;
         if (p.comp.knee) comp.knee = p.comp.knee;
         comp.attack = 0.003;
         comp.release = 0.1;
         comp.process(buf, buf);
-        console.log(`[${ver}] energy ▶ compression:`, energyOf(buf).toFixed(6));
+        const afterCompEnergy = energyOf(buf);
+        console.log(`[${ver}] energy ▶ compression:`, afterCompEnergy.toFixed(6));
+        
+        // 🔍 VERIFY: Check if compression had effect
+        if (Math.abs(afterCompEnergy - beforeCompEnergy) < 0.000001) {
+          console.error(`❌ CRITICAL: Compression had no effect on ${ver}!`);
+        }
       }
 
       // 9) Final
