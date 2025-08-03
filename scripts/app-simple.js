@@ -440,19 +440,19 @@ class VoiceQuizApp {
             });
         }
 
-        // Keyboard shortcuts for choice selection
-        document.addEventListener('keydown', (e) => {
-            const comparisonPage = document.getElementById('comparison-page');
-            if (comparisonPage && comparisonPage.classList.contains('active')) {
-                if (e.key.toLowerCase() === 'l') {
-                    e.preventDefault();
-                    this.selectChoice('left');
-                } else if (e.key.toLowerCase() === 'r') {
-                    e.preventDefault();
-                    this.selectChoice('right');
-                }
-            }
-        });
+        // Keyboard shortcuts for choice selection - DISABLED
+        // document.addEventListener('keydown', (e) => {
+        //     const comparisonPage = document.getElementById('comparison-page');
+        //     if (comparisonPage && comparisonPage.classList.contains('active')) {
+        //         if (e.key.toLowerCase() === 'l') {
+        //             e.preventDefault();
+        //             this.selectChoice('left');
+        //         } else if (e.key.toLowerCase() === 'r') {
+        //             e.preventDefault();
+        //             this.selectChoice('right');
+        //         }
+        //     }
+        // });
 
         const comparisonContinueBtn = document.getElementById('comparison-continue-btn');
         if (comparisonContinueBtn) {
@@ -1227,11 +1227,11 @@ class VoiceQuizApp {
         if (labelLeft) labelLeft.textContent = '\u00A0';
         if (labelRight) labelRight.textContent = '\u00A0';
         
-        // Show selection instructions
-        const instructions = document.getElementById('selection-instructions');
-        if (instructions) {
-            instructions.style.display = 'block';
-        }
+        // Show selection instructions - DISABLED
+        // const instructions = document.getElementById('selection-instructions');
+        // if (instructions) {
+        //     instructions.style.display = 'block';
+        // }
         
         // Reset feedback section
         const feedbackSection = document.getElementById('feedback-section');
@@ -1247,6 +1247,9 @@ class VoiceQuizApp {
         feedbackCheckboxes.forEach(cb => {
             cb.checked = false;
         });
+        
+        // Reset all feedback tag selections
+        document.querySelectorAll('.feedback-tag').forEach(tag => tag.classList.remove('selected'));
         
         // Clear feedback text
         const feedbackComment = document.getElementById('feedback-comment');
@@ -1331,11 +1334,11 @@ class VoiceQuizApp {
             }
         }
         
-        // Hide selection instructions
-        const instructions = document.getElementById('selection-instructions');
-        if (instructions) {
-            instructions.style.display = 'none';
-        }
+        // Hide selection instructions - DISABLED
+        // const instructions = document.getElementById('selection-instructions');
+        // if (instructions) {
+        //     instructions.style.display = 'none';
+        // }
         
         // CRITICAL: NEVER reveal variant labels during the quiz - maintain blind comparison
         // this.revealVariantLabels(); // REMOVED - labels must stay hidden for research integrity
@@ -2639,35 +2642,35 @@ class VoiceQuizApp {
             console.log('✅ Wired select-right button');
         }
         
-        // Add keyboard shortcuts
-        const handleKeyPress = (event) => {
-            if (event.key.toLowerCase() === 'l') {
-                event.preventDefault();
-                this.playChoice('left');
-            } else if (event.key.toLowerCase() === 'r') {
-                event.preventDefault();
-                this.playChoice('right');
-            } else if (event.key === '1') {
-                event.preventDefault();
-                this.selectChoice('left');
-            } else if (event.key === '2') {
-                event.preventDefault();
-                this.selectChoice('right');
-            }
-        };
+        // Add keyboard shortcuts - DISABLED
+        // const handleKeyPress = (event) => {
+        //     if (event.key.toLowerCase() === 'l') {
+        //         event.preventDefault();
+        //         this.playChoice('left');
+        //     } else if (event.key.toLowerCase() === 'r') {
+        //         event.preventDefault();
+        //         this.playChoice('right');
+        //     } else if (event.key === '1') {
+        //         event.preventDefault();
+        //         this.selectChoice('left');
+        //     } else if (event.key === '2') {
+        //         event.preventDefault();
+        //         this.selectChoice('right');
+        //     }
+        // };
         
         // Remove any existing keyboard handler
-        if (this.keyboardHandler) {
-            document.removeEventListener('keydown', this.keyboardHandler);
-        }
+        // if (this.keyboardHandler) {
+        //     document.removeEventListener('keydown', this.keyboardHandler);
+        // }
         
         // Add event listener for keyboard shortcuts
-        document.addEventListener('keydown', handleKeyPress);
+        // document.addEventListener('keydown', handleKeyPress);
         
         // Store the handler for cleanup
-        this.keyboardHandler = handleKeyPress;
+        // this.keyboardHandler = handleKeyPress;
         
-        console.log('🎯 Event listeners wired for comparison page (including keyboard shortcuts)');
+        console.log('🎯 Event listeners wired for comparison page (keyboard shortcuts disabled)');
     }
 
 

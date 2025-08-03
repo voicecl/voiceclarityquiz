@@ -681,12 +681,12 @@ class UIController {
     }
 
     showFeedbackSection() {
-        const instructions = document.getElementById('selection-instructions');
+        // const instructions = document.getElementById('selection-instructions'); // DISABLED
         const feedbackSection = document.getElementById('feedback-section');
         
-        if (instructions) {
-            instructions.classList.add('hidden');
-        }
+        // if (instructions) {
+        //     instructions.classList.add('hidden');
+        // }
         
         if (feedbackSection) {
             feedbackSection.classList.remove('hidden');
