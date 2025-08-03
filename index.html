@@ -15,6 +15,9 @@
             <div class="text-center">
                 <div class="text-4xl mb-4">🎙️</div>
                 <h1 class="text-3xl font-bold mb-4">Voice Clarity Quiz</h1>
+                <p class="text-aura-secondary mb-4 leading-relaxed">
+                    Takes about 10 minutes - Record short responses and compare audio versions at your own pace
+                </p>
                 <p class="text-aura-secondary mb-8 leading-relaxed">
                     Which version of your answers sounds better to you?
                 </p>
@@ -26,10 +29,13 @@
                 <div class="text-xs text-aura-secondary mb-4 italic">For best results, we recommend using Chrome or Firefox. Safari may experience audio processing limitations.</div>
                 
                 <div class="text-sm text-aura-secondary space-y-2">
-                    <div>• 10 quick questions</div>
-                    <div>• Read prompts and record your responses</div>
-                    <div>• Compare processed audio versions of your voice</div>
+                    <div>• 10 quick questions (≈10 minutes total)</div>
+                    <div>• Record responses up to 15 seconds each</div>
+                    <div>• Listen to processed versions (just a few seconds needed)</div>
                     <div>• Select which version sounds better to you</div>
+                </div>
+                <div class="text-xs text-aura-secondary mt-2 italic">
+                    Listen to as much or as little as you need to make your choice
                 </div>
             </div>
         </div>
@@ -38,13 +44,15 @@
         <div id="registration-page" class="screen">
             <div class="text-center max-w-md mx-auto">
                 <div class="text-3xl mb-4">📋</div>
-                <h2 class="text-2xl font-bold mb-6">Voice Research Study</h2>
+                <h2 class="text-2xl font-bold mb-2">Voice Research Study</h2>
+                <p class="text-aura-secondary mb-4">Help us improve voice technology for everyone</p>
+                <p class="text-sm text-aura-secondary mb-6 italic">This study takes about 10 minutes to complete</p>
                 
                 <!-- Privacy Notice -->
                 <div class="privacy-notice text-left mb-6">
                     <h3 class="text-lg font-semibold mb-3">What we collect:</h3>
                     <ul class="text-sm text-aura-secondary space-y-1 mb-4">
-                        <li>• Your name and email (for tracking participation)</li>
+                        <li>• Your name and email (for tracking participation and optional updates)</li>
                         <li>• Short voice recordings (automatically deleted after processing)</li>
                         <li>• Your preferences between different audio versions</li>
                         <li>• Device information (mobile vs desktop)</li>
@@ -80,8 +88,7 @@
                             <input type="checkbox" id="consent" name="consent" required 
                                    class="consent-checkbox mt-1">
                             <span class="text-sm text-aura-secondary">
-                                I consent to participate in this voice research study and understand 
-                                that my voice recordings will be processed and then automatically deleted.
+                                I consent to participate in this voice research study. I understand my voice recordings will be processed for research purposes and then automatically deleted within 1 hour.
                             </span>
                         </label>
                     </div>
@@ -285,10 +292,28 @@
         <!-- Thank You Screen (hidden by default) -->
         <div id="thankyou-screen" class="hidden flex flex-col items-center justify-center py-16">
           <div class="text-6xl mb-4">🎉</div>
-          <h2 class="text-3xl font-bold mb-2">Voice Clarity Quiz Complete!</h2>
-          <p class="text-lg text-gray-300 mb-6">
-            Thank you for participating in our voice preference study. Your preferences have been recorded and will help improve voice enhancement technology.
+          <h2 class="text-3xl font-bold mb-2">Mission complete! 🎉</h2>
+          <p class="text-lg text-gray-300 mb-4">
+            Your 10 audio choices are now helping us improve voice technology.
           </p>
+          <p class="text-lg text-gray-300 mb-6">
+            Every ear is different - that's what makes this so valuable!
+          </p>
+          
+          <!-- Future Studies Checkbox -->
+          <div class="max-w-md mx-auto mb-6">
+            <p class="text-lg text-gray-300 mb-4">Want to help shape the future of voice tech?</p>
+            <div class="consent-section">
+              <label class="flex items-start space-x-3 text-left">
+                                 <input type="checkbox" id="wants-updates" name="futureStudies" checked 
+                        class="consent-checkbox mt-1">
+                <span class="text-sm text-gray-300">
+                  Keep me updated on future studies (totally optional)
+                </span>
+              </label>
+            </div>
+          </div>
+          
           <p class="text-sm text-gray-500 mb-2">
             Your voice recordings have been automatically deleted for your privacy protection.
           </p>
