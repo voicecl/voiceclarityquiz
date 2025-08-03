@@ -1806,7 +1806,7 @@ class VoiceQuizApp {
             let actualProcessingType = currentTrial.type; // Default fallback
             
             // Get the actual version that was selected from the session data
-            const currentQuestionData = window.voiceQuizApp.session.questions[this.currentQuestion];
+            // Note: currentQuestionData is already declared above, so we reuse it
             if (currentQuestionData && currentQuestionData.selectedVersion) {
                 actualProcessingType = currentQuestionData.selectedVersion;
                 console.log(`🔧 FIXED: Actual processing type for question ${this.currentQuestion + 1}:`, {
