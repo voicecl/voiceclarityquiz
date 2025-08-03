@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Superpowered SDK Diagnostic Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .warning { background-color: #fff3cd; border-color: #ffeaa7; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button { padding: 10px 20px; margin: 5px; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto; }
+        .log { font-family: monospace; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Superpowered SDK Diagnostic Test</h1>
+    
+    <div class="test-section">
+        <h2>1. Environment Check</h2>
+        <button onclick="checkEnvironment()">Check Browser Environment</button>
+        <div id="environment-status"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. Superpowered Library Loading</h2>
+        <button onclick="testSuperpoweredLoading()">Test Superpowered Loading</button>
+        <div id="loading-status"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. AudioWorklet Test</h2>
+        <button onclick="testAudioWorklet()">Test AudioWorklet</button>
+        <div id="worklet-status"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. Processing Test</h2>
+        <button onclick="testProcessing()">Test Audio Processing</button>
+        <div id="processing-status"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>5. Console Logs</h2>
+        <div id="console-logs" class="log"></div>
+        <button onclick="clearLogs()">Clear Logs</button>
+    </div>
+
+    <script>
+        // Capture console logs
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        
+        function addLog(type, message) {
+            const logsDiv = document.getElementById('console-logs');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.innerHTML = `<span style="color: #666;">[${timestamp}]</span> <span style="color: ${type === 'error' ? '#dc3545' : type === 'warn' ? '#ffc107' : '#007bff'};">${type.toUpperCase()}:</span> ${message}`;
+            logsDiv.appendChild(logEntry);
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+        }
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            addLog('log', args.join(' '));
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            addLog('error', args.join(' '));
+        };
+        
+        console.warn = function(...args) {
+            originalWarn.apply(console, args);
+            addLog('warn', args.join(' '));
+        };
+        
+        function clearLogs() {
+            document.getElementById('console-logs').innerHTML = '';
+        }
+
+        async function checkEnvironment() {
+            const statusDiv = document.getElementById('environment-status');
+            statusDiv.innerHTML = '<p>Checking browser environment...</p>';
+            
+            const checks = {
+                'HTTPS/HTTP': window.location.protocol === 'https:' || window.location.hostname === 'localhost',
+                'AudioContext': typeof (window.AudioContext || window.webkitAudioContext) !== 'undefined',
+                'AudioWorklet': typeof window.AudioWorklet !== 'undefined',
+                'WebAssembly': typeof WebAssembly !== 'undefined',
+                'SharedArrayBuffer': typeof SharedArrayBuffer !== 'undefined',
+                'User Agent': navigator.userAgent
+            };
+            
+            let allPassed = true;
+            let html = '<div class="info"><h3>Environment Check Results:</h3><ul>';
+            
+            for (const [check, result] of Object.entries(checks)) {
+                const passed = typeof result === 'boolean' ? result : true;
+                const status = passed ? '✅' : '❌';
+                const color = passed ? 'green' : 'red';
+                
+                html += `<li style="color: ${color};">${status} ${check}: ${typeof result === 'boolean' ? (result ? 'PASS' : 'FAIL') : result}</li>`;
+                
+                if (typeof result === 'boolean' && !result) {
+                    allPassed = false;
+                }
+            }
+            
+            html += '</ul></div>';
+            
+            if (allPassed) {
+                html += '<div class="success"><p>✅ All environment checks passed!</p></div>';
+            } else {
+                html += '<div class="error"><p>❌ Some environment checks failed. AudioWorklet may not work properly.</p></div>';
+            }
+            
+            statusDiv.innerHTML = html;
+        }
+
+        async function testSuperpoweredLoading() {
+            const statusDiv = document.getElementById('loading-status');
+            statusDiv.innerHTML = '<p>Testing Superpowered library loading...</p>';
+            
+            try {
+                console.log('🔧 Testing Superpowered library loading...');
+                
+                // Test 1: Try to import from local lib
+                console.log('📦 Attempting to import from ../lib/Superpowered.js...');
+                const { SuperpoweredGlue, SuperpoweredWebAudio } = await import('../lib/Superpowered.js');
+                
+                console.log('✅ Superpowered imported successfully');
+                console.log('📦 SuperpoweredGlue:', typeof SuperpoweredGlue);
+                console.log('📦 SuperpoweredWebAudio:', typeof SuperpoweredWebAudio);
+                
+                // Test 2: Try to initialize Superpowered
+                console.log('🔧 Attempting to initialize Superpowered...');
+                const superpowered = await SuperpoweredGlue.Instantiate(
+                    'ExampleLicenseKey-WillExpire-OnNextUpdate',
+                    '../lib/SuperpoweredWebAssembly.wasm'
+                );
+                
+                console.log('✅ Superpowered initialized successfully');
+                console.log('📦 Available Superpowered classes:', Object.keys(superpowered));
+                
+                statusDiv.innerHTML = `
+                    <div class="success">
+                        <h3>✅ Superpowered Loading Successful</h3>
+                        <p><strong>Import:</strong> ✅ Success</p>
+                        <p><strong>Initialization:</strong> ✅ Success</p>
+                        <p><strong>Available Classes:</strong> ${Object.keys(superpowered).length}</p>
+                        <p>Check console for detailed information.</p>
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('❌ Superpowered loading failed:', error);
+                
+                statusDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Superpowered Loading Failed</h3>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                        <p><strong>Stack:</strong></p>
+                        <pre>${error.stack}</pre>
+                        <p>Possible issues:</p>
+                        <ul>
+                            <li>Superpowered.js file not found in lib/ directory</li>
+                            <li>SuperpoweredWebAssembly.wasm file not found</li>
+                            <li>License key issues</li>
+                            <li>Network/CORS issues</li>
+                        </ul>
+                    </div>
+                `;
+            }
+        }
+
+        async function testAudioWorklet() {
+            const statusDiv = document.getElementById('worklet-status');
+            statusDiv.innerHTML = '<p>Testing AudioWorklet creation...</p>';
+            
+            try {
+                console.log('🔧 Testing AudioWorklet creation...');
+                
+                // Create audio context
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                console.log('✅ AudioContext created:', audioContext.state);
+                
+                // Try to load the worklet
+                console.log('📦 Loading AudioWorklet module...');
+                await audioContext.audioWorklet.addModule('./scripts/voice-processor-worklet.js');
+                console.log('✅ AudioWorklet module loaded successfully');
+                
+                // Try to create a worklet node
+                console.log('🔧 Creating AudioWorklet node...');
+                const workletNode = new AudioWorkletNode(audioContext, 'VoiceProcessor');
+                console.log('✅ AudioWorklet node created successfully');
+                
+                statusDiv.innerHTML = `
+                    <div class="success">
+                        <h3>✅ AudioWorklet Test Successful</h3>
+                        <p><strong>AudioContext:</strong> ${audioContext.state}</p>
+                        <p><strong>Sample Rate:</strong> ${audioContext.sampleRate}</p>
+                        <p><strong>Worklet Module:</strong> Loaded</p>
+                        <p><strong>Worklet Node:</strong> Created</p>
+                        <p>Check console for detailed logs.</p>
+                    </div>
+                `;
+                
+                // Cleanup
+                workletNode.disconnect();
+                audioContext.close();
+                
+            } catch (error) {
+                console.error('❌ AudioWorklet test failed:', error);
+                
+                statusDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ AudioWorklet Test Failed</h3>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                        <p><strong>Stack:</strong></p>
+                        <pre>${error.stack}</pre>
+                        <p>Possible issues:</p>
+                        <ul>
+                            <li>Superpowered import failing in worklet</li>
+                            <li>Syntax error in worklet code</li>
+                            <li>HTTPS required for AudioWorklet</li>
+                            <li>Browser doesn't support AudioWorklet</li>
+                        </ul>
+                    </div>
+                `;
+            }
+        }
+
+        async function testProcessing() {
+            const statusDiv = document.getElementById('processing-status');
+            statusDiv.innerHTML = '<p>Testing audio processing...</p>';
+            
+            try {
+                console.log('🔧 Testing audio processing...');
+                
+                // Create test audio buffer
+                const sampleRate = 44100;
+                const duration = 0.1; // 100ms
+                const buffer = new Float32Array(sampleRate * duration);
+                
+                // Fill with a simple sine wave
+                const frequency = 440; // A4
+                for (let i = 0; i < buffer.length; i++) {
+                    buffer[i] = Math.sin(2 * Math.PI * frequency * i / sampleRate);
+                }
+                
+                console.log('✅ Test buffer created:', {
+                    length: buffer.length,
+                    duration: duration,
+                    sampleRate: sampleRate,
+                    energy: buffer.reduce((sum, val) => sum + Math.abs(val), 0)
+                });
+                
+                // Test processing through AudioProcessor
+                console.log('🔧 Testing AudioProcessor...');
+                
+                // Import and test AudioProcessor
+                const { AudioProcessor } = await import('./scripts/audio-processor.js');
+                const audioProcessor = new AudioProcessor();
+                
+                console.log('🔧 Initializing AudioProcessor...');
+                await audioProcessor.initialize();
+                
+                console.log('🔧 Processing test buffer...');
+                const processedVersions = await audioProcessor.processRecording(buffer);
+                
+                console.log('✅ Processing completed successfully');
+                console.log('📦 Processed versions:', Object.keys(processedVersions));
+                
+                // Check if versions are different
+                const energies = {};
+                for (const [version, data] of Object.entries(processedVersions)) {
+                    const energy = data.reduce((sum, val) => sum + Math.abs(val), 0);
+                    energies[version] = energy;
+                    console.log(`📊 ${version} energy:`, energy.toFixed(6));
+                }
+                
+                // Check if processing had effect
+                const rawEnergy = energies.raw || 0;
+                const hasProcessing = Object.entries(energies).some(([version, energy]) => 
+                    version !== 'raw' && Math.abs(energy - rawEnergy) > 0.000001
+                );
+                
+                statusDiv.innerHTML = `
+                    <div class="${hasProcessing ? 'success' : 'warning'}">
+                        <h3>${hasProcessing ? '✅' : '⚠️'} Audio Processing Test ${hasProcessing ? 'Successful' : 'Limited'}</h3>
+                        <p><strong>Versions Created:</strong> ${Object.keys(processedVersions).join(', ')}</p>
+                        <p><strong>Processing Effect:</strong> ${hasProcessing ? 'Yes' : 'No'}</p>
+                        <p><strong>Energies:</strong></p>
+                        <pre>${JSON.stringify(energies, null, 2)}</pre>
+                        <p>Check console for detailed logs.</p>
+                    </div>
+                `;
+                
+                // Cleanup
+                audioProcessor.cleanup();
+                
+            } catch (error) {
+                console.error('❌ Audio processing test failed:', error);
+                
+                statusDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Audio Processing Test Failed</h3>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                        <p><strong>Stack:</strong></p>
+                        <pre>${error.stack}</pre>
+                        <p>This indicates the Superpowered SDK is not working properly.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Auto-run environment check on load
+        window.addEventListener('load', () => {
+            console.log('🔧 Superpowered Diagnostic Test Page Loaded');
+            checkEnvironment();
+        });
+    </script>
+</body>
+</html> 

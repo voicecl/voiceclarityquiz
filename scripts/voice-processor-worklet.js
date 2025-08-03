@@ -1,6 +1,6 @@
 // public/scripts/voice-processor-worklet.js
 import { SuperpoweredWebAudio } 
-  from "https://cdn.jsdelivr.net/npm/@superpoweredsdk/web@2.7.2";
+  from "../lib/Superpowered.js";
 
 // Helper: convert cents to ratio
 function centsToRatio(cents) {
