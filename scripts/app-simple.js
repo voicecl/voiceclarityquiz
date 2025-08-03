@@ -2216,13 +2216,17 @@ class VoiceQuizApp {
                 verification.processingModes[type] = (verification.processingModes[type] || 0) + 1;
             }
             
-            // Verify exactly one raw version per trial
+            // Verify exactly one raw version per trial (except catch trials)
             const hasRawLeft = leftVersion === 'raw';
             const hasRawRight = rightVersion === 'raw';
             const rawCount = (hasRawLeft ? 1 : 0) + (hasRawRight ? 1 : 0);
             
-            if (rawCount !== 1) {
-                verification.errors.push(`Question ${index + 1}: Expected exactly 1 raw version, got ${rawCount}`);
+            if (!isCatch) {
+                if (rawCount !== 1) {
+                    verification.errors.push(`Question ${index + 1}: Expected exactly 1 raw version, got ${rawCount}`);
+                }
+            } else {
+                console.log(`✅ Question ${index + 1} is the expected catch trial (raw vs raw)`);
             }
             
             // Track raw side distribution
