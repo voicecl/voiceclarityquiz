@@ -126,6 +126,7 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
 
       // 2) Start with raw copy
       let buf = new Float32Array(inputBuffer);
+      const originalBuf = new Float32Array(buf); // Keep a copy for comparison
       console.log(`[${ver}] energy ▶ input:`, energyOf(buf).toFixed(6));
 
       // Create processors
@@ -149,22 +150,57 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
         vibro = new S.Filter(S.FilterType?.Peaking ?? S.Filter_Peaking, this.sampleRate);
       }
 
+      // 🔧 DEBUG: Check processor state
+      console.log('🔧 Processor state check:', { 
+        pitchShift: !!ps, 
+        filters: !!hp && !!lp, 
+        eq: !!eq,
+        comp: !!comp,
+        notch: !!notch,
+        vibro: !!vibro,
+        superpoweredReady: !!S, 
+        sampleRate: this.sampleRate 
+      });
+
       // 3) Pitch shift
+      console.log('🎛️ About to apply pitch shift:', { 
+        processorExists: !!ps, 
+        bufferLength: buf.length, 
+        firstSample: buf[0],
+        pitchShift: centsToRatio(p.pitchCents),
+        formantCorrection: p.formant
+      });
       ps.pitchShift = centsToRatio(p.pitchCents);
       ps.formantCorrection = p.formant;
       ps.process(buf, buf);
       console.log(`[${ver}] energy ▶ pitch-shift:`, energyOf(buf).toFixed(6));
 
       // 4) High-/Low-pass
+      console.log('🎛️ About to apply high-pass filter:', { 
+        processorExists: !!hp, 
+        frequency: p.hpFreq,
+        bufferLength: buf.length 
+      });
       hp.frequency = p.hpFreq;
       hp.process(buf, buf);
       console.log(`[${ver}] energy ▶ high-pass:`, energyOf(buf).toFixed(6));
       
+      console.log('🎛️ About to apply low-pass filter:', { 
+        processorExists: !!lp, 
+        frequency: p.lpFreq,
+        bufferLength: buf.length 
+      });
       lp.frequency = p.lpFreq;
       lp.process(buf, buf);
       console.log(`[${ver}] energy ▶ low-pass:`, energyOf(buf).toFixed(6));
 
       // 5) Shelving/EQ
+      console.log('🎛️ About to apply EQ:', { 
+        processorExists: !!eq, 
+        lowGain: p.shelfLow.gain,
+        highGain: p.shelfHigh.gain,
+        bufferLength: buf.length 
+      });
       eq.lowGain = p.shelfLow.gain;
       eq.highGain = p.shelfHigh.gain;
       eq.process(buf, buf);
@@ -200,6 +236,25 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
 
       // 9) Final
       console.log(`[${ver}] energy ▶ FINAL:`, energyOf(buf).toFixed(6));
+      
+      // 🔍 CRITICAL DEBUG: Check if processing actually changed anything
+      const finalEnergy = energyOf(buf);
+      const originalEnergy = energyOf(originalBuf);
+      const energyChanged = Math.abs(finalEnergy - originalEnergy) > 0.000001;
+      const arraysChanged = !this._arraysEqual(buf, originalBuf);
+      
+      console.log(`🔍 ${ver} processing verification:`, {
+        energyChanged,
+        arraysChanged,
+        originalEnergy: originalEnergy.toFixed(6),
+        finalEnergy: finalEnergy.toFixed(6),
+        energyDifference: (finalEnergy - originalEnergy).toFixed(6)
+      });
+      
+      if (!energyChanged && !arraysChanged) {
+        console.error(`❌ CRITICAL: ${ver} processing had NO EFFECT! Audio unchanged.`);
+      }
+      
       results[ver] = buf;
       
       // Clean up processors
