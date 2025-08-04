@@ -25,55 +25,44 @@ class ResearchAudioProcessor {
         console.log('✅ AudioContext created with sample rate:', this.audioContext.sampleRate);
       }
 
-      // 2. Load Superpowered SDK from npm package
-      console.log('🎵 Loading Superpowered SDK from npm package...');
+      // 2. Get Superpowered from window object (loaded via CDN)
+      console.log('🎵 Loading Superpowered SDK from CDN...');
       
-      try {
-        const { SuperpoweredGlue, SuperpoweredWebAudio } = await import('@superpoweredsdk/web');
-        console.log('✅ Superpowered SDK loaded successfully from npm package');
-      } catch (importError) {
-        console.error('❌ Failed to import Superpowered SDK:', importError);
-        throw new Error('Superpowered SDK not available');
+      const Superpowered = window.Superpowered;
+      const SuperpoweredGlue = window.SuperpoweredGlue;
+      const SuperpoweredWebAudio = SuperpoweredGlue.SuperpoweredWebAudio;
+      
+      if (!Superpowered || !SuperpoweredGlue) {
+        throw new Error("Superpowered SDK not available. Check if CDN script is loaded in index.html.");
       }
+      
+      console.log('✅ Superpowered SDK loaded successfully from CDN');
 
-      try {
-        // 3. Initialize Superpowered WASM
-        // ✅ Using Superpowered's official public test key for development only
-        // ⚠️ Do not replace with a real license in public or testing environments
-        this.superpowered = await SuperpoweredGlue.Instantiate(
-          'ExampleLicenseKey-WillExpire-OnNextUpdate',
-          '/static/superpowered/superpowered.wasm'
-        );
-        console.log('✅ Superpowered WebAssembly initialized');
+      // 3. Initialize Superpowered WASM
+      // ✅ Using Superpowered's official public test key for development only
+      // ⚠️ Do not replace with a real license in public or testing environments
+      this.superpowered = await SuperpoweredGlue.Instantiate(
+        'ExampleLicenseKey-WillExpire-OnNextUpdate',
+        Superpowered
+      );
+      console.log('✅ Superpowered WebAssembly initialized');
 
-        // 4. Create WebAudio manager
-        this.webaudioManager = new SuperpoweredWebAudio(
-          this.audioContext.sampleRate,
-          this.superpowered
-        );
-        console.log('✅ Superpowered WebAudio manager created');
+      // 4. Create WebAudio manager
+      this.webaudioManager = new SuperpoweredWebAudio(
+        this.audioContext.sampleRate,
+        this.superpowered
+      );
+      console.log('✅ Superpowered WebAudio manager created');
 
-        // 5. Create research-grade AudioWorklet
-        this.workletNode = await this.webaudioManager.createAudioNodeAsync(
-          './scripts/voice-processor-research.js',
-          'VoiceProcessor',
-          (message) => this.handleWorkletMessage(message),
-          1, 1
-        );
+      // 5. Create research-grade AudioWorklet
+      this.workletNode = await this.webaudioManager.createAudioNodeAsync(
+        './scripts/voice-processor-research.js',
+        'VoiceProcessor',
+        (message) => this.handleWorkletMessage(message),
+        1, 1
+      );
 
-        console.log('✅ Research-grade AudioWorklet created');
-
-      } catch (superpoweredError) {
-        console.warn('⚠️ Superpowered SDK failed, using fallback:', superpoweredError);
-        
-        // Fallback to native Web Audio AudioWorklet
-        await this.audioContext.audioWorklet.addModule('./scripts/voice-processor-research.js');
-        this.workletNode = new AudioWorkletNode(this.audioContext, 'VoiceProcessor');
-        this.workletNode.port.onmessage = (event) => this.handleWorkletMessage(event.data);
-        
-        console.log('✅ Fallback AudioWorklet created');
-      }
-
+      console.log('✅ Research-grade AudioWorklet created');
       console.log('✅ Research AudioProcessor initialized successfully');
       this.isInitialized = true;
 
@@ -139,38 +128,11 @@ class ResearchAudioProcessor {
           audioData: Array.from(audioBuffer.getChannelData(0)) // Mono channel
         };
 
-        if (this.workletNode.sendMessageToAudioScope) {
-          // Superpowered AudioWorklet
-          this.workletNode.sendMessageToAudioScope(message);
-        } else {
-          // Standard AudioWorklet
-          this.workletNode.port.postMessage(message);
-        }
+        this.workletNode.sendMessageToAudioScope(message);
       } catch (error) {
         this.pendingRequests.delete(requestId);
         reject(new Error(`Failed to send message to research worklet: ${error.message}`));
       }
-    });
-  }
-
-  async processRecordingFallback(audioBuffer) {
-    console.log('🔄 Using fallback processing without Superpowered...');
-    
-    // Simple fallback processing without Superpowered
-    const audioData = Array.from(audioBuffer.getChannelData(0));
-    
-    return {
-      light: new Float32Array(this.processBasicFilter(audioData, 0.8)),
-      medium: new Float32Array(this.processBasicFilter(audioData, 0.6)),
-      deep: new Float32Array(this.processBasicFilter(audioData, 0.4))
-    };
-  }
-
-  processBasicFilter(audioData, intensity) {
-    // Basic low-pass filter simulation
-    return audioData.map((sample, i) => {
-      if (i === 0) return sample * intensity;
-      return (sample + audioData[i-1]) * 0.5 * intensity;
     });
   }
 
@@ -184,12 +146,7 @@ class ResearchAudioProcessor {
     if (this.workletNode) {
       try {
         const cleanupMessage = { command: 'cleanup' };
-        
-        if (this.workletNode.sendMessageToAudioScope) {
-          this.workletNode.sendMessageToAudioScope(cleanupMessage);
-        } else {
-          this.workletNode.port.postMessage(cleanupMessage);
-        }
+        this.workletNode.sendMessageToAudioScope(cleanupMessage);
         
         if (this.workletNode.destruct) {
           this.workletNode.destruct();
