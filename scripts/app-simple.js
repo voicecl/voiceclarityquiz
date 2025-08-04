@@ -957,14 +957,22 @@ class VoiceQuizApp {
             
             // Create AudioProcessor instance lazily when needed for processing
             if (!window.audioProcessor) {
-                console.log('Creating ResearchAudioProcessor instance for processing...');
+                console.log('Creating AudioProcessor instance for processing...');
                 try {
-                    // Import ResearchAudioProcessor dynamically
-                    const { ResearchAudioProcessor } = await import('./research-audio-processor.js');
-                    window.audioProcessor = new ResearchAudioProcessor();
+                    // Try ResearchAudioProcessor first, fallback to regular AudioProcessor
+                    try {
+                        const { ResearchAudioProcessor } = await import('./research-audio-processor.js');
+                        window.audioProcessor = new ResearchAudioProcessor();
+                        console.log('✅ Using ResearchAudioProcessor');
+                    } catch (researchError) {
+                        console.warn('⚠️ ResearchAudioProcessor failed, using regular AudioProcessor:', researchError.message);
+                        const { AudioProcessor } = await import('./audio-processor.js');
+                        window.audioProcessor = new AudioProcessor();
+                        console.log('✅ Using regular AudioProcessor as fallback');
+                    }
                 } catch (importError) {
-                    console.error('Failed to import ResearchAudioProcessor:', importError);
-                    throw new Error('ResearchAudioProcessor not available');
+                    console.error('Failed to import any AudioProcessor:', importError);
+                    throw new Error('No AudioProcessor available');
                 }
             }
             

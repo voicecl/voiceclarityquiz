@@ -1,5 +1,5 @@
 // voice-processor-research.js - Exact Research Parameters Implementation
-import { SuperpoweredWebAudio } from 'https://cdn.jsdelivr.net/npm/@superpoweredsdk/web@2.6.5';
+import { SuperpoweredWebAudio } from '/static/superpowered/Superpowered.js';
 
 class VoiceProcessorResearch extends SuperpoweredWebAudio.AudioWorkletProcessor {
     constructor() {

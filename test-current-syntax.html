@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Current Syntax Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .success { border-color: #4CAF50; background: #f1f8e9; }
+        .error { border-color: #f44336; background: #ffebee; }
+        .warning { border-color: #ff9800; background: #fff3e0; }
+        button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #1976D2; }
+        pre {
+            background: #f8f8f8;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Current Syntax Test</h1>
+    <p>Testing the current state of research-audio-processor.js to identify any remaining syntax issues.</p>
+
+    <div class="test-section">
+        <h2>Test Controls</h2>
+        <button onclick="testSyntax()">Test Syntax</button>
+        <button onclick="testFileContent()">Test File Content</button>
+        <button onclick="testCacheBust()">Test Cache Bust</button>
+        <button onclick="runFullTest()">Run Full Test</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Results</h2>
+        <div id="results"></div>
+    </div>
+
+    <script type="module">
+        // Test syntax by attempting to import
+        async function testSyntax() {
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'test-section';
+            resultDiv.innerHTML = '<h3>Testing Syntax...</h3>';
+            document.getElementById('results').appendChild(resultDiv);
+
+            try {
+                console.log('🔍 Testing syntax of research-audio-processor.js...');
+                
+                // Try to import the file - this will fail if there are syntax errors
+                const { ResearchAudioProcessor } = await import('./scripts/research-audio-processor.js');
+                console.log('✅ Syntax test passed - file loaded successfully');
+                
+                resultDiv.className = 'test-section success';
+                resultDiv.innerHTML = `
+                    <h3>✅ Syntax Test - SUCCESS</h3>
+                    <p><strong>Import:</strong> ✅ research-audio-processor.js loaded without syntax errors</p>
+                    <p><strong>Class:</strong> ✅ ResearchAudioProcessor class available</p>
+                    <p><strong>Constructor:</strong> ${ResearchAudioProcessor.name}</p>
+                `;
+                
+            } catch (error) {
+                console.error('❌ Syntax test failed:', error);
+                
+                resultDiv.className = 'test-section error';
+                resultDiv.innerHTML = `
+                    <h3>❌ Syntax Test - FAILED</h3>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                    <p><strong>Type:</strong> ${error.name}</p>
+                    <p><strong>Stack:</strong> ${error.stack}</p>
+                `;
+            }
+        }
+
+        // Test file content by fetching it directly
+        async function testFileContent() {
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'test-section';
+            resultDiv.innerHTML = '<h3>Testing File Content...</h3>';
+            document.getElementById('results').appendChild(resultDiv);
+
+            try {
+                console.log('🔍 Fetching research-audio-processor.js content...');
+                
+                // Fetch the file content directly
+                const response = await fetch('./scripts/research-audio-processor.js');
+                const content = await response.text();
+                
+                console.log('✅ File content fetched successfully');
+                
+                // Check for common syntax issues
+                const issues = [];
+                
+                // Check for orphaned catch blocks
+                const catchBlocks = content.match(/} catch \(/g);
+                const tryBlocks = content.match(/try {/g);
+                
+                if (catchBlocks && tryBlocks) {
+                    if (catchBlocks.length !== tryBlocks.length) {
+                        issues.push(`Mismatched try-catch blocks: ${tryBlocks.length} try, ${catchBlocks.length} catch`);
+                    }
+                }
+                
+                // Check for unclosed braces
+                const openBraces = (content.match(/{/g) || []).length;
+                const closeBraces = (content.match(/}/g) || []).length;
+                
+                if (openBraces !== closeBraces) {
+                    issues.push(`Unclosed braces: ${openBraces} open, ${closeBraces} close`);
+                }
+                
+                // Check line 111 specifically
+                const lines = content.split('\n');
+                if (lines.length >= 111) {
+                    const line111 = lines[110]; // 0-indexed
+                    console.log('Line 111:', line111);
+                    
+                    if (line111.includes('} catch') && !line111.includes('try')) {
+                        issues.push('Line 111: Orphaned catch block detected');
+                    }
+                }
+                
+                if (issues.length === 0) {
+                    resultDiv.className = 'test-section success';
+                    resultDiv.innerHTML = `
+                        <h3>✅ File Content Test - SUCCESS</h3>
+                        <p><strong>File Size:</strong> ${content.length} characters</p>
+                        <p><strong>Lines:</strong> ${lines.length}</p>
+                        <p><strong>Try Blocks:</strong> ${tryBlocks ? tryBlocks.length : 0}</p>
+                        <p><strong>Catch Blocks:</strong> ${catchBlocks ? catchBlocks.length : 0}</p>
+                        <p><strong>Braces:</strong> ${openBraces} open, ${closeBraces} close</p>
+                    `;
+                } else {
+                    resultDiv.className = 'test-section error';
+                    resultDiv.innerHTML = `
+                        <h3>❌ File Content Test - ISSUES FOUND</h3>
+                        <ul>
+                            ${issues.map(issue => `<li>${issue}</li>`).join('')}
+                        </ul>
+                        <p><strong>File Size:</strong> ${content.length} characters</p>
+                        <p><strong>Lines:</strong> ${lines.length}</p>
+                    `;
+                }
+                
+            } catch (error) {
+                console.error('❌ File content test failed:', error);
+                
+                resultDiv.className = 'test-section error';
+                resultDiv.innerHTML = `
+                    <h3>❌ File Content Test - FAILED</h3>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                `;
+            }
+        }
+
+        // Test with cache busting
+        async function testCacheBust() {
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'test-section';
+            resultDiv.innerHTML = '<h3>Testing Cache Bust...</h3>';
+            document.getElementById('results').appendChild(resultDiv);
+
+            try {
+                console.log('🔍 Testing with cache busting...');
+                
+                // Try to import with cache busting
+                const timestamp = Date.now();
+                const { ResearchAudioProcessor } = await import(`./scripts/research-audio-processor.js?v=${timestamp}`);
+                console.log('✅ Cache bust test passed');
+                
+                resultDiv.className = 'test-section success';
+                resultDiv.innerHTML = `
+                    <h3>✅ Cache Bust Test - SUCCESS</h3>
+                    <p><strong>Import:</strong> ✅ File loaded with cache busting</p>
+                    <p><strong>Timestamp:</strong> ${timestamp}</p>
+                `;
+                
+            } catch (error) {
+                console.error('❌ Cache bust test failed:', error);
+                
+                resultDiv.className = 'test-section error';
+                resultDiv.innerHTML = `
+                    <h3>❌ Cache Bust Test - FAILED</h3>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                `;
+            }
+        }
+
+        // Run full test
+        async function runFullTest() {
+            document.getElementById('results').innerHTML = '';
+            await testFileContent();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            await testCacheBust();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            await testSyntax();
+        }
+
+        // Make functions available globally
+        window.testSyntax = testSyntax;
+        window.testFileContent = testFileContent;
+        window.testCacheBust = testCacheBust;
+        window.runFullTest = runFullTest;
+
+        // Auto-run on page load
+        window.addEventListener('load', () => {
+            console.log('🚀 Starting current syntax test...');
+        });
+    </script>
+</body>
+</html> 

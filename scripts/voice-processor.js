@@ -1,7 +1,7 @@
 // voice-processor.js - CORRECTED implementation for Superpowered SDK v2.6.5
 // Addresses setTimeout errors and proper buffer handling
 
-import { SuperpoweredWebAudio } from 'https://cdn.jsdelivr.net/npm/@superpoweredsdk/web@2.6.5';
+import { SuperpoweredWebAudio } from '/static/superpowered/Superpowered.js';
 
 class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
     constructor() {

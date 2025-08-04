@@ -4,7 +4,7 @@ let VoiceProcessor;
 
 try {
     // Try to import Superpowered SDK
-    import { SuperpoweredWebAudio } from 'https://cdn.jsdelivr.net/npm/@superpoweredsdk/web@2.6.5';
+import { SuperpoweredWebAudio } from '/static/superpowered/Superpowered.js';
     
     // If import succeeds, use Superpowered version
     VoiceProcessor = class extends SuperpoweredWebAudio.AudioWorkletProcessor {

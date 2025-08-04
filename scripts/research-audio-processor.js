@@ -25,50 +25,24 @@ class ResearchAudioProcessor {
         console.log('✅ AudioContext created with sample rate:', this.audioContext.sampleRate);
       }
 
-      // 2. Try to load Superpowered SDK with multiple version attempts
-      console.log('🎵 Loading Superpowered SDK...');
+      // 2. Load Superpowered SDK from npm package
+      console.log('🎵 Loading Superpowered SDK from npm package...');
       
-      const versionsToTry = [
-        'https://cdn.jsdelivr.net/npm/@superpoweredsdk/web@2.6.5',
-        'https://cdn.jsdelivr.net/npm/@superpoweredsdk/web@2.6.4',
-        'https://cdn.jsdelivr.net/npm/@superpoweredsdk/web@2.7.0',
-        'https://unpkg.com/@superpoweredsdk/web@2.6.5',
-        'https://unpkg.com/@superpoweredsdk/web@2.6.4'
-      ];
-      
-      let SuperpoweredGlue, SuperpoweredWebAudio;
-      let successfulVersion = null;
-      
-      for (const versionUrl of versionsToTry) {
-        try {
-          console.log(`🔍 Trying version: ${versionUrl}`);
-          const module = await import(versionUrl);
-          console.log('🔍 Available exports:', Object.keys(module));
-          
-          // Try to get the exports we need
-          SuperpoweredGlue = module.SuperpoweredGlue || module.default?.SuperpoweredGlue;
-          SuperpoweredWebAudio = module.SuperpoweredWebAudio || module.default?.SuperpoweredWebAudio;
-          
-          if (SuperpoweredGlue && SuperpoweredWebAudio) {
-            successfulVersion = versionUrl;
-            console.log(`✅ Superpowered SDK loaded successfully from: ${versionUrl}`);
-            break;
-          } else {
-            console.warn(`⚠️ Version ${versionUrl} has no required exports. Available: ${Object.keys(module).join(', ')}`);
-          }
-        } catch (versionError) {
-          console.warn(`⚠️ Version ${versionUrl} failed:`, versionError.message);
-        }
-      }
-      
-      if (!SuperpoweredGlue || !SuperpoweredWebAudio) {
-        throw new Error(`All Superpowered versions failed. Available versions tried: ${versionsToTry.join(', ')}`);
+      try {
+        const { SuperpoweredGlue, SuperpoweredWebAudio } = await import('@superpoweredsdk/web');
+        console.log('✅ Superpowered SDK loaded successfully from npm package');
+      } catch (importError) {
+        console.error('❌ Failed to import Superpowered SDK:', importError);
+        throw new Error('Superpowered SDK not available');
       }
 
       try {
         // 3. Initialize Superpowered WASM
+        // ✅ Using Superpowered's official public test key for development only
+        // ⚠️ Do not replace with a real license in public or testing environments
         this.superpowered = await SuperpoweredGlue.Instantiate(
-          'ExampleLicenseKey-WillExpire-OnNextUpdate'
+          'ExampleLicenseKey-WillExpire-OnNextUpdate',
+          '/static/superpowered/superpowered.wasm'
         );
         console.log('✅ Superpowered WebAssembly initialized');
 
