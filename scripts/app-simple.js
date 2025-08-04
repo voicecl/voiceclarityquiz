@@ -568,6 +568,9 @@ class VoiceQuizApp {
             };
 
             // Register user
+            if (!window.userManager) {
+                throw new Error('User manager not initialized. Please refresh the page and try again.');
+            }
             const result = await window.userManager.registerUser(userData);
 
             if (result.success) {

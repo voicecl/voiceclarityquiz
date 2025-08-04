@@ -61,6 +61,16 @@ class UserManager {
                 throw new Error('Invalid user data provided');
             }
 
+            // Check if user has already participated
+            const participants = this.getParticipants();
+            if (participants.includes(userData.email)) {
+                return {
+                    success: false,
+                    blocked: true,
+                    message: 'You have already participated in this study.'
+                };
+            }
+
             const userId = this.generateUserId();
             const deviceInfo = this.detectDevice();
             
@@ -85,11 +95,18 @@ class UserManager {
             this.addParticipant(userData.email);
             
             console.log('User registered successfully:', this.currentUser);
-            return this.currentUser;
+            return {
+                success: true,
+                user: this.currentUser
+            };
             
         } catch (error) {
             console.error('User registration failed:', error);
-            throw error;
+            return {
+                success: false,
+                blocked: false,
+                message: error.message || 'Registration failed'
+            };
         }
     }
 
