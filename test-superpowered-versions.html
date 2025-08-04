@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Superpowered SDK Version Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .version-test {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .success { border-color: #4CAF50; background: #f1f8e9; }
+        .error { border-color: #f44336; background: #ffebee; }
+        .warning { border-color: #ff9800; background: #fff3e0; }
+        button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #1976D2; }
+        pre {
+            background: #f8f8f8;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Superpowered SDK Version Test</h1>
+    <p>This page tests different Superpowered SDK versions to find which one works with your setup.</p>
+
+    <div class="test-section">
+        <h2>Available Versions to Test</h2>
+        <button onclick="testVersion('2.6.5')">Test v2.6.5</button>
+        <button onclick="testVersion('2.6.4')">Test v2.6.4</button>
+        <button onclick="testVersion('2.6.3')">Test v2.6.3</button>
+        <button onclick="testVersion('2.7.0')">Test v2.7.0</button>
+        <button onclick="testVersion('2.8.0')">Test v2.8.0</button>
+        <button onclick="testVersion('latest')">Test Latest</button>
+        <button onclick="testAllVersions()">Test All Versions</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Results</h2>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const versions = ['2.6.5', '2.6.4', '2.6.3', '2.7.0', '2.8.0', 'latest'];
+        const results = {};
+
+        async function testVersion(version) {
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'version-test';
+            resultDiv.innerHTML = `<h3>Testing v${version}...</h3>`;
+            document.getElementById('results').appendChild(resultDiv);
+
+            try {
+                console.log(`🔍 Testing Superpowered SDK v${version}...`);
+                
+                // Test the import
+                const module = await import(`https://cdn.jsdelivr.net/npm/@superpoweredsdk/web@${version}`);
+                
+                const availableExports = Object.keys(module);
+                console.log(`📦 Available exports for v${version}:`, availableExports);
+                
+                // Check for required exports
+                const hasSuperpoweredGlue = availableExports.includes('SuperpoweredGlue') || 
+                                          (module.default && module.default.SuperpoweredGlue);
+                const hasSuperpoweredWebAudio = availableExports.includes('SuperpoweredWebAudio') || 
+                                              (module.default && module.default.SuperpoweredWebAudio);
+                
+                const result = {
+                    version,
+                    success: hasSuperpoweredGlue && hasSuperpoweredWebAudio,
+                    availableExports,
+                    hasSuperpoweredGlue,
+                    hasSuperpoweredWebAudio,
+                    error: null
+                };
+                
+                results[version] = result;
+                
+                if (result.success) {
+                    resultDiv.className = 'version-test success';
+                    resultDiv.innerHTML = `
+                        <h3>✅ v${version} - SUCCESS</h3>
+                        <p><strong>Available exports:</strong> ${availableExports.join(', ')}</p>
+                        <p><strong>SuperpoweredGlue:</strong> ${hasSuperpoweredGlue ? '✅' : '❌'}</p>
+                        <p><strong>SuperpoweredWebAudio:</strong> ${hasSuperpoweredWebAudio ? '✅' : '❌'}</p>
+                    `;
+                } else {
+                    resultDiv.className = 'version-test error';
+                    resultDiv.innerHTML = `
+                        <h3>❌ v${version} - FAILED</h3>
+                        <p><strong>Available exports:</strong> ${availableExports.join(', ')}</p>
+                        <p><strong>SuperpoweredGlue:</strong> ${hasSuperpoweredGlue ? '✅' : '❌'}</p>
+                        <p><strong>SuperpoweredWebAudio:</strong> ${hasSuperpoweredWebAudio ? '✅' : '❌'}</p>
+                    `;
+                }
+                
+            } catch (error) {
+                console.error(`❌ Error testing v${version}:`, error);
+                
+                const result = {
+                    version,
+                    success: false,
+                    availableExports: [],
+                    hasSuperpoweredGlue: false,
+                    hasSuperpoweredWebAudio: false,
+                    error: error.message
+                };
+                
+                results[version] = result;
+                
+                resultDiv.className = 'version-test error';
+                resultDiv.innerHTML = `
+                    <h3>❌ v${version} - ERROR</h3>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                `;
+            }
+        }
+
+        async function testAllVersions() {
+            document.getElementById('results').innerHTML = '';
+            console.log('🧪 Testing all Superpowered SDK versions...');
+            
+            for (const version of versions) {
+                await testVersion(version);
+                // Small delay between tests
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
+            // Show summary
+            showSummary();
+        }
+
+        function showSummary() {
+            const summaryDiv = document.createElement('div');
+            summaryDiv.className = 'test-section';
+            summaryDiv.innerHTML = `
+                <h2>📊 Test Summary</h2>
+                <pre>${JSON.stringify(results, null, 2)}</pre>
+            `;
+            document.getElementById('results').appendChild(summaryDiv);
+        }
+
+        // Auto-test on page load
+        window.addEventListener('load', () => {
+            console.log('🚀 Starting Superpowered SDK version test...');
+        });
+    </script>
+</body>
+</html> 

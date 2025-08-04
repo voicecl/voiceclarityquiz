@@ -28,7 +28,18 @@ class ResearchAudioProcessor {
       // 2. Try to load Superpowered SDK
       console.log('🎵 Loading Superpowered SDK v2.6.5...');
       try {
-        const { SuperpoweredGlue, SuperpoweredWebAudio } = await import('https://cdn.jsdelivr.net/npm/@superpoweredsdk/web@2.6.5');
+        // First, let's check what's actually available in the module
+        const module = await import('https://cdn.jsdelivr.net/npm/@superpoweredsdk/web@2.6.5');
+        console.log('🔍 Available exports:', Object.keys(module));
+        
+        // Try to get the exports we need
+        const SuperpoweredGlue = module.SuperpoweredGlue || module.default?.SuperpoweredGlue;
+        const SuperpoweredWebAudio = module.SuperpoweredWebAudio || module.default?.SuperpoweredWebAudio;
+        
+        if (!SuperpoweredGlue || !SuperpoweredWebAudio) {
+          throw new Error(`Superpowered exports not found. Available: ${Object.keys(module).join(', ')}`);
+        }
+        
         console.log('✅ Superpowered SDK loaded');
 
         // 3. Initialize Superpowered WASM
@@ -141,6 +152,27 @@ class ResearchAudioProcessor {
         this.pendingRequests.delete(requestId);
         reject(new Error(`Failed to send message to research worklet: ${error.message}`));
       }
+    });
+  }
+
+  async processRecordingFallback(audioBuffer) {
+    console.log('🔄 Using fallback processing without Superpowered...');
+    
+    // Simple fallback processing without Superpowered
+    const audioData = Array.from(audioBuffer.getChannelData(0));
+    
+    return {
+      light: this.processBasicFilter(audioData, 0.8),
+      medium: this.processBasicFilter(audioData, 0.6),
+      deep: this.processBasicFilter(audioData, 0.4)
+    };
+  }
+
+  processBasicFilter(audioData, intensity) {
+    // Basic low-pass filter simulation
+    return audioData.map((sample, i) => {
+      if (i === 0) return sample * intensity;
+      return (sample + audioData[i-1]) * 0.5 * intensity;
     });
   }
 
