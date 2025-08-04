@@ -326,15 +326,15 @@ class VoiceQuizApp {
             !trial.isCatch && trial.comparisonSetup.rightVersion === 'raw'
         ).length + (catchTrial.comparisonSetup.rightVersion === 'raw' ? 1 : 0);
         
-        console.log('✅ Generated trial set with guaranteed distribution:', {
+        console.log('✅ Generated trial set with counter-balanced distribution:', {
             totalTrials: allTrials.length,
             realTrials: testTrials.length,
             catchTrials: 1,
             catchPosition: catchPosition + 1,
             processingModes: shuffledModes,
-            guaranteedDistribution: {
-                rawOnLeft: rawLeftCount,   // Should be exactly 5
-                rawOnRight: rawRightCount, // Should be exactly 5
+            distribution: {
+                rawOnLeft: rawLeftCount,   // Will be 5 or 6 (acceptable)
+                rawOnRight: rawRightCount, // Will be 6 or 5 (acceptable)
                 processedOnLeft: sideMask.filter(s => s === 'procLeft').length,
                 processedOnRight: sideMask.filter(s => s === 'procRight').length
             }
@@ -2419,11 +2419,9 @@ class VoiceQuizApp {
                 if (rightVersion !== 'raw') distribution.versionDistribution[rightVersion]++;
             }
             
-            // Track raw side distribution (only for real trials)
-            if (!isCatch) {
-                if (leftVersion === 'raw') distribution.rawSideDistribution.left++;
-                if (rightVersion === 'raw') distribution.rawSideDistribution.right++;
-            }
+            // Track raw side distribution (including catch trial)
+            if (leftVersion === 'raw') distribution.rawSideDistribution.left++;
+            if (rightVersion === 'raw') distribution.rawSideDistribution.right++;
             
             // Verify logic
             if (!isCatch) {
@@ -2444,7 +2442,7 @@ class VoiceQuizApp {
             catchTrials: 1,
             realTrials: 9,
             processingModes: { light: 3, medium: 3, deep: 3 },
-            rawSideDistribution: { left: 5, right: 5 }, // Raw on left 5 times, right 5 times (including catch trial)
+            rawSideDistribution: { left: 5, right: 5 }, // Acceptable: 5/6 or 6/5 (4/5 or 5/4 in real trials + 1/1 from catch)
             versionDistribution: { light: 3, medium: 3, deep: 3, raw: 11 } // 9 real trials + 2 from catch trial
         };
         
@@ -2472,12 +2470,18 @@ class VoiceQuizApp {
             }
         }
         
-        for (const [side, expectedCount] of Object.entries(expected.rawSideDistribution)) {
-            const actualCount = distribution.rawSideDistribution[side];
-            if (actualCount !== expectedCount) {
-                console.error(`❌ Raw on ${side}: Expected ${expectedCount}, got ${actualCount}`);
-                hasErrors = true;
-            }
+        // Accept either 5/6 or 6/5 distribution (4/5 or 5/4 in real trials + 1/1 from catch)
+        const rawLeftCount = distribution.rawSideDistribution.left;
+        const rawRightCount = distribution.rawSideDistribution.right;
+        const isAcceptableDistribution = 
+            (rawLeftCount === 5 && rawRightCount === 6) || 
+            (rawLeftCount === 6 && rawRightCount === 5);
+        
+        if (!isAcceptableDistribution) {
+            console.error(`❌ Raw distribution: Got ${rawLeftCount}-left, ${rawRightCount}-right. Expected either 5-left/6-right or 6-left/5-right`);
+            hasErrors = true;
+        } else {
+            console.log(`✅ Raw distribution: ${rawLeftCount}-left, ${rawRightCount}-right (acceptable)`);
         }
         
         for (const [version, expectedCount] of Object.entries(expected.versionDistribution)) {
@@ -2497,7 +2501,7 @@ class VoiceQuizApp {
         if (!hasErrors) {
             console.log('✅ QUIZ DISTRIBUTION VERIFICATION PASSED');
             console.log('✅ All distributions match expected values');
-            console.log('✅ Raw appears 5 times on right, 5 times on left (including catch trial)');
+            console.log(`✅ Raw distribution: ${rawLeftCount}-left, ${rawRightCount}-right (acceptable)`);
             console.log('✅ 3 light, 3 medium, 3 deep, 1 catch trial');
         } else {
             console.error('❌ QUIZ DISTRIBUTION VERIFICATION FAILED');

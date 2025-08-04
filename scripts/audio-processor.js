@@ -48,7 +48,7 @@ class AudioProcessor {
       console.log('🎵 Creating AudioWorklet with corrected API...');
       
       this.workletNode = await this.webaudioManager.createAudioNodeAsync(
-        './public/scripts/voice-processor-worklet.js',  // url (use public version with CDN imports)
+        './scripts/voice-processor-worklet.js',  // url (use root-level scripts version)
         'VoiceProcessor',                       // className
         (message) => {                          // callback
           this.handleWorkletMessage(message);
