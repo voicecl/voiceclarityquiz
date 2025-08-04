@@ -249,6 +249,15 @@ class VoiceQuizApp {
             interactionTimestamps: []    // All user interactions with timestamps
         };
         
+        // 🔧 FIXED: Per-question data storage for independent processing
+        this.questionData = {}; // Store per-question raw buffers and processing state
+        
+        // 🔧 ENHANCED: Explicit playback state tracking
+        this.playbackState = {
+            hasPlayedLeft: false,
+            hasPlayedRight: false
+        };
+        
         this.initializeApp();
     }
 
@@ -907,18 +916,44 @@ class VoiceQuizApp {
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
             const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
             
-            // 🔧 FIXED: Preserve original recording buffer as raw version
+            // 🔧 FIXED: Store per-question raw buffer (not session-wide)
             // Extract the raw audio data as Float32Array (mono channel)
             const originalRawBuffer = audioBuffer.getChannelData(0);
             
-            // Store the original raw buffer for the session if not already stored
-            if (!this.sessionRawBuffer) {
-                this.sessionRawBuffer = new Float32Array(originalRawBuffer);
-                console.log('🔧 Stored session raw buffer:', {
-                    length: this.sessionRawBuffer.length,
-                    sampleRate: audioBuffer.sampleRate
-                });
-            }
+            // Store the raw buffer for THIS question only
+            const questionRawBuffer = new Float32Array(originalRawBuffer);
+            console.log('🔧 Stored question raw buffer for question', this.currentQuestion + 1, ':', {
+                length: questionRawBuffer.length,
+                sampleRate: audioBuffer.sampleRate
+            });
+            
+            // 🔧 FIXED: Store per-question data with complete version pairing
+            this.questionData[this.currentQuestion] = {
+                rawBuffer: questionRawBuffer,
+                sampleRate: audioBuffer.sampleRate,
+                recordingTime: Date.now(),
+                processedBuffer: null, // Will be set after processing
+                processedType: null, // Will be set after randomization
+                randomizedVersions: null, // Will be set after randomization
+                selectedChoice: null,
+                reasons: [], // Will be set after feedback submission
+                comment: '', // Will be set after feedback submission
+                hasPlayedLeft: false,
+                hasPlayedRight: false
+            };
+            
+            console.log('🔧 Question processing state for question', this.currentQuestion + 1, ':', {
+                hasRawBuffer: !!questionRawBuffer,
+                bufferLength: questionRawBuffer.length,
+                sampleRate: audioBuffer.sampleRate,
+                questionDataKeys: Object.keys(this.questionData),
+                questionDataStructure: {
+                    hasRawBuffer: !!this.questionData[this.currentQuestion]?.rawBuffer,
+                    hasProcessedBuffer: !!this.questionData[this.currentQuestion]?.processedBuffer,
+                    processedType: this.questionData[this.currentQuestion]?.processedType,
+                    hasRandomizedVersions: !!this.questionData[this.currentQuestion]?.randomizedVersions
+                }
+            });
             
             // Create AudioProcessor instance lazily when needed for processing
             if (!window.audioProcessor) {
@@ -939,9 +974,9 @@ class VoiceQuizApp {
             }
             
             // 🔧 FIXED: Only process non-raw versions with Superpowered
-            // Create versions object with raw as the original buffer
+            // Create versions object with raw as THIS question's buffer
             const processedVersions = {
-                raw: this.sessionRawBuffer // Use the preserved original buffer
+                raw: questionRawBuffer // Use THIS question's raw buffer
             };
             
             // Process only light, medium, and deep versions with Superpowered
@@ -960,6 +995,16 @@ class VoiceQuizApp {
                 processedVersions.light = superpoweredVersions.light;
                 processedVersions.medium = superpoweredVersions.medium;
                 processedVersions.deep = superpoweredVersions.deep;
+                
+                // 🔧 ENHANCED: Defensive buffer length validation
+                for (const [version, buffer] of Object.entries(processedVersions)) {
+                    if (version === 'raw') continue;
+                    
+                    if (buffer.length !== processedVersions.raw.length) {
+                        console.warn(`⚠️ Buffer length mismatch: ${version} (${buffer.length}) vs raw (${processedVersions.raw.length})`);
+                        console.warn('⚠️ This may indicate Superpowered processing issues');
+                    }
+                }
                 
                 // 🔍 DEBUG: Verify raw is different from processed versions
                 console.log('🔍 Raw vs processed version verification:');
@@ -1120,6 +1165,25 @@ class VoiceQuizApp {
             left: versions[leftVersion],
             right: versions[rightVersion]
         };
+        
+        // 🔧 ENHANCED: Store randomized versions in question data
+        if (this.questionData[this.currentQuestion]) {
+            const processedType = leftVersion === 'raw' ? rightVersion : leftVersion;
+            
+            this.questionData[this.currentQuestion].randomizedVersions = {
+                left: leftVersion,
+                right: rightVersion
+            };
+            this.questionData[this.currentQuestion].processedBuffer = versions[processedType];
+            this.questionData[this.currentQuestion].processedType = processedType;
+            
+            console.log('🔧 Stored randomized versions for question', this.currentQuestion + 1, ':', {
+                left: leftVersion,
+                right: rightVersion,
+                processedType: processedType,
+                processedBufferLength: versions[processedType]?.length
+            });
+        }
         
         // 🔍 Verify we got actual audio data
         console.log('🔍 Randomized version check:', {
@@ -1638,12 +1702,25 @@ class VoiceQuizApp {
             // Update current version tracking
             this.currentlyPlayingVersion = choice;
             
+            // 🔧 ENHANCED: Track explicit playback state
+            if (choice === 'left') {
+                this.playbackState.hasPlayedLeft = true;
+            } else if (choice === 'right') {
+                this.playbackState.hasPlayedRight = true;
+            }
+            
             // Track playback time
             const playTime = Date.now();
             if (!this.selectionBehaviorData.playbackTimes[choice]) {
                 this.selectionBehaviorData.playbackTimes[choice] = [];
             }
             this.selectionBehaviorData.playbackTimes[choice].push(playTime);
+            
+            console.log('🔧 Playback state updated:', {
+                choice,
+                hasPlayedLeft: this.playbackState.hasPlayedLeft,
+                hasPlayedRight: this.playbackState.hasPlayedRight
+            });
             
         }).catch(error => {
             console.error(`❌ Failed to play choice ${choice}:`, error);
@@ -1871,10 +1948,12 @@ class VoiceQuizApp {
         this.isMovingToNext = true;
         
         try {
-            // Check both local state and session state
+            // 🔧 FIXED: Enhanced validation - ensure all required steps are complete
             const currentQuestionData = window.voiceQuizApp.session.questions[this.currentQuestion];
-            if (!this.selectedChoice || !currentQuestionData || !currentQuestionData.selectedChoice) {
-                this.showError('Please select a choice before continuing.');
+            const validationResult = this.validateQuestionCompletion(currentQuestionData);
+            
+            if (!validationResult.isValid) {
+                this.showError(validationResult.errorMessage);
                 this.isMovingToNext = false;
                 return;
             }
@@ -1994,11 +2073,9 @@ class VoiceQuizApp {
             // Send webhook data to Make.com
             await this.sendWebhookData();
             
-            // 🔧 FIXED: Clean up session raw buffer
-            if (this.sessionRawBuffer) {
-                this.sessionRawBuffer = null;
-                console.log('🔧 Cleaned up session raw buffer');
-            }
+            // 🔧 FIXED: Clean up all question data
+            this.questionData = {};
+            console.log('🔧 Cleaned up all question data');
             
             // Show results
             this.showResultsPage();
@@ -2189,11 +2266,9 @@ class VoiceQuizApp {
         this.selectedVersion = null;
         this.isRegistered = false;
         
-        // 🔧 FIXED: Clean up session raw buffer for new quiz
-        if (this.sessionRawBuffer) {
-            this.sessionRawBuffer = null;
-            console.log('🔧 Cleaned up session raw buffer for new quiz');
-        }
+        // 🔧 FIXED: Clean up all question data for new quiz
+        this.questionData = {};
+        console.log('🔧 Cleaned up all question data for new quiz');
         
         // Clear all tracked URLs and blobs
         this.audioUrls.clear();
@@ -2940,7 +3015,22 @@ class VoiceQuizApp {
         // 7. Reset audio state
         this.resetAudioState();
         
-        // 8. Force garbage collection
+        // 8. 🔧 FIXED: Clean up per-question data
+        if (this.questionData[this.currentQuestion]) {
+            console.log('🧹 Cleaning up question data for question', this.currentQuestion + 1);
+            delete this.questionData[this.currentQuestion];
+        }
+        
+        // 9. Reset question-specific state
+        this.selectedChoice = null;
+        this.selectedVersion = null;
+        
+        // 🔧 ENHANCED: Reset explicit playback state
+        this.playbackState.hasPlayedLeft = false;
+        this.playbackState.hasPlayedRight = false;
+        console.log('🔧 Reset playback state for next question');
+        
+        // 10. Force garbage collection
         this.forceGarbageCollection();
         
         // Log memory after cleanup
@@ -2950,6 +3040,41 @@ class VoiceQuizApp {
         this.verifyMemoryCleanup();
         
         console.log('✅ Complete question cleanup finished');
+    }
+    
+    // 🔧 FIXED: Enhanced validation method
+    validateQuestionCompletion(currentQuestionData) {
+        const errors = [];
+        
+        // Check if choice was selected
+        if (!this.selectedChoice && !currentQuestionData?.selectedChoice) {
+            errors.push('Please select a choice before continuing.');
+        }
+        
+        // 🔧 ENHANCED: Check explicit playback state
+        const leftPlayed = this.playbackState.hasPlayedLeft;
+        const rightPlayed = this.playbackState.hasPlayedRight;
+        
+        if (!leftPlayed || !rightPlayed) {
+            console.warn('⚠️ Not all audio versions were played:', { leftPlayed, rightPlayed });
+        }
+        
+        // Check if feedback was provided (if required)
+        const feedback = this.collectFeedback();
+        if (!feedback || feedback.length === 0) {
+            console.warn('⚠️ No feedback provided for question', this.currentQuestion + 1);
+        }
+        
+        return {
+            isValid: errors.length === 0,
+            errorMessage: errors.join(' '),
+            details: {
+                choiceSelected: !!(this.selectedChoice || currentQuestionData?.selectedChoice),
+                leftPlayed,
+                rightPlayed,
+                feedbackProvided: !!(feedback && feedback.length > 0)
+            }
+        };
     }
     
     cleanupAllAudioUrls() {
@@ -3209,6 +3334,18 @@ class VoiceQuizApp {
         if (currentQuestionData) {
             currentQuestionData.reasons = reasons;
             currentQuestionData.comment = comment;
+        }
+        
+        // 🔧 ENHANCED: Also store in per-question data structure
+        if (this.questionData && this.questionData[this.currentQuestion]) {
+            this.questionData[this.currentQuestion].reasons = reasons;
+            this.questionData[this.currentQuestion].comment = comment;
+            console.log('🔧 Stored feedback in questionData for question', this.currentQuestion + 1, ':', {
+                reasons: reasons,
+                commentLength: comment.length,
+                hasReasons: reasons.length > 0,
+                hasComment: comment.length > 0
+            });
         }
         
         // 3) Proceed directly to next question without showing confirmation toast
