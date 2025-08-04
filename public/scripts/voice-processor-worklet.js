@@ -54,7 +54,7 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
       // Return empty results with error indication
       return {
         error: 'Superpowered not loaded',
-        raw: new Float32Array(inputBuffer) // At least provide raw version
+        raw: [new Float32Array(inputBuffer)] // At least provide raw version
       };
     }
     
@@ -95,8 +95,14 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
 
     const results = {};
     
+    // 🔧 FIXED: Initialize all version arrays defensively
+    results.raw = [];
+    results.light = [];
+    results.medium = [];
+    results.deep = [];
+    
     // Process raw version (pass-through)
-    results.raw = new Float32Array(inputBuffer);
+    results.raw[0] = new Float32Array(inputBuffer);
     
     // Process other versions
     for (const [ver, p] of Object.entries(specs)) {
@@ -188,7 +194,7 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
 
       // 9) Final
       console.log(`[${ver}] energy ▶ FINAL:`, energyOf(buf).toFixed(6));
-      results[ver] = buf;
+      results[ver][0] = buf;
       
       // Clean up processors
       [ps, hp, lp, eq, comp, notch, vibro].forEach(p => p?.destruct?.());

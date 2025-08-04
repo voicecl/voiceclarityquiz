@@ -69,7 +69,7 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
       // Return empty results with error indication
       return {
         error: 'Superpowered not loaded',
-        raw: new Float32Array(inputBuffer) // At least provide raw version
+        raw: [new Float32Array(inputBuffer)] // At least provide raw version
       };
     }
     
@@ -133,30 +133,36 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
 
     const results = {};
     
+    // 🔧 FIXED: Initialize all version arrays defensively
+    results.raw = [];
+    results.light = [];
+    results.medium = [];
+    results.deep = [];
+    
     // 🔍 DEBUG: Store original input for comparison
     const originalInput = new Float32Array(inputBuffer);
     console.log('🔍 Original input energy:', this._computeEnergy(originalInput).toFixed(6));
     
     // 🔧 FIXED: Create TRUE raw version FIRST (never process this!)
-    results.raw = new Float32Array(inputBuffer); // Pure copy - NEVER process this!
+    results.raw[0] = new Float32Array(inputBuffer); // Pure copy - NEVER process this!
     
     console.log('🔧 Raw version created:', {
-      length: results.raw.length,
-      energy: this._computeEnergy(results.raw).toFixed(6),
-      isIdenticalToInput: this._arraysEqual(results.raw, originalInput)
+      length: results.raw[0].length,
+      energy: this._computeEnergy(results.raw[0]).toFixed(6),
+      isIdenticalToInput: this._arraysEqual(results.raw[0], originalInput)
     });
     
     // 🔍 DEBUG: Verify raw is identical to original
-    const rawEnergy = this._computeEnergy(results.raw);
+    const rawEnergy = this._computeEnergy(results.raw[0]);
     const originalEnergy = this._computeEnergy(originalInput);
-    const isIdentical = this._arraysEqual(results.raw, originalInput);
+    const isIdentical = this._arraysEqual(results.raw[0], originalInput);
     
     console.log('🔍 Raw version check:', {
       rawEnergy: rawEnergy.toFixed(6),
       originalEnergy: originalEnergy.toFixed(6),
       energyMatch: Math.abs(rawEnergy - originalEnergy) < 0.000001,
       isIdentical: isIdentical,
-      rawLength: results.raw.length,
+      rawLength: results.raw[0].length,
       originalLength: originalInput.length
     });
     
@@ -438,7 +444,7 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
         console.error(`❌ CRITICAL: ${ver} processing had NO EFFECT! Audio unchanged.`);
       }
       
-      results[ver] = buf;
+      results[ver][0] = buf;
       
       // Clean up processors
       [ps, hp, lp, eq, comp, notch, vibro].forEach(p => p?.destruct?.());
@@ -448,8 +454,8 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
     console.log('🔍 Final version comparison:');
     for (const [ver, data] of Object.entries(results)) {
       if (ver === 'raw') continue;
-      const isSameAsRaw = this._arraysEqual(data, results.raw);
-      const energyDiff = Math.abs(this._computeEnergy(data) - this._computeEnergy(results.raw));
+      const isSameAsRaw = this._arraysEqual(data[0], results.raw[0]);
+      const energyDiff = Math.abs(this._computeEnergy(data[0]) - this._computeEnergy(results.raw[0]));
       console.log(`  ${ver} vs raw:`, {
         isSameAsRaw,
         energyDiff: energyDiff.toFixed(6),
