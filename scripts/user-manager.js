@@ -394,3 +394,6 @@ class UserManager {
 // Export for global use
 window.UserManager = UserManager;
 
+// Create global instance
+window.userManager = new UserManager();
+
