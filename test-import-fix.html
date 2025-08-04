@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Import Fix Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .success { border-color: #4CAF50; background: #f1f8e9; }
+        .error { border-color: #f44336; background: #ffebee; }
+        button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #1976D2; }
+        pre {
+            background: #f8f8f8;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Import Fix Test</h1>
+    <p>Testing the ES6 import fix for ResearchAudioProcessor.</p>
+
+    <div class="test-section">
+        <h2>Test Controls</h2>
+        <button onclick="testImport()">Test ES6 Import</button>
+        <button onclick="testGlobalAccess()">Test Global Access</button>
+        <button onclick="runFullTest()">Run Full Test</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Results</h2>
+        <div id="results"></div>
+    </div>
+
+    <script type="module">
+        // Test ES6 import
+        async function testImport() {
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'test-section';
+            resultDiv.innerHTML = '<h3>Testing ES6 Import...</h3>';
+            document.getElementById('results').appendChild(resultDiv);
+
+            try {
+                console.log('🔍 Testing ES6 import of ResearchAudioProcessor...');
+                
+                // Test ES6 import
+                const { ResearchAudioProcessor } = await import('./scripts/research-audio-processor.js');
+                console.log('✅ ES6 import successful:', ResearchAudioProcessor);
+                
+                // Test creating instance
+                const processor = new ResearchAudioProcessor();
+                console.log('✅ Instance created:', processor);
+                
+                // Test initialization
+                await processor.initialize();
+                console.log('✅ Initialization successful');
+                
+                resultDiv.className = 'test-section success';
+                resultDiv.innerHTML = `
+                    <h3>✅ ES6 Import Test - SUCCESS</h3>
+                    <p><strong>Import:</strong> ✅ ResearchAudioProcessor imported successfully</p>
+                    <p><strong>Instance:</strong> ✅ Instance created successfully</p>
+                    <p><strong>Initialization:</strong> ✅ Initialization completed</p>
+                    <p><strong>Constructor:</strong> ${ResearchAudioProcessor.name}</p>
+                `;
+                
+            } catch (error) {
+                console.error('❌ ES6 import test failed:', error);
+                
+                resultDiv.className = 'test-section error';
+                resultDiv.innerHTML = `
+                    <h3>❌ ES6 Import Test - FAILED</h3>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                    <p><strong>Stack:</strong> ${error.stack}</p>
+                `;
+            }
+        }
+
+        // Test global access
+        async function testGlobalAccess() {
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'test-section';
+            resultDiv.innerHTML = '<h3>Testing Global Access...</h3>';
+            document.getElementById('results').appendChild(resultDiv);
+
+            try {
+                console.log('🔍 Testing global access to ResearchAudioProcessor...');
+                
+                // Wait a moment for scripts to load
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Test global access
+                if (typeof window.ResearchAudioProcessor === 'undefined') {
+                    throw new Error('ResearchAudioProcessor not available globally');
+                }
+                
+                console.log('✅ Global access successful:', window.ResearchAudioProcessor);
+                
+                // Test creating instance via global
+                const processor = new window.ResearchAudioProcessor();
+                console.log('✅ Global instance created:', processor);
+                
+                resultDiv.className = 'test-section success';
+                resultDiv.innerHTML = `
+                    <h3>✅ Global Access Test - SUCCESS</h3>
+                    <p><strong>Global Access:</strong> ✅ ResearchAudioProcessor available globally</p>
+                    <p><strong>Instance:</strong> ✅ Instance created via global access</p>
+                    <p><strong>Constructor:</strong> ${window.ResearchAudioProcessor.name}</p>
+                `;
+                
+            } catch (error) {
+                console.error('❌ Global access test failed:', error);
+                
+                resultDiv.className = 'test-section error';
+                resultDiv.innerHTML = `
+                    <h3>❌ Global Access Test - FAILED</h3>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                    <p><strong>Available globals:</strong> ${Object.keys(window).filter(key => key.includes('Audio')).join(', ')}</p>
+                `;
+            }
+        }
+
+        // Run full test
+        async function runFullTest() {
+            document.getElementById('results').innerHTML = '';
+            await testImport();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            await testGlobalAccess();
+        }
+
+        // Make functions available globally
+        window.testImport = testImport;
+        window.testGlobalAccess = testGlobalAccess;
+        window.runFullTest = runFullTest;
+
+        // Auto-run on page load
+        window.addEventListener('load', () => {
+            console.log('🚀 Starting import fix test...');
+        });
+    </script>
+</body>
+</html> 

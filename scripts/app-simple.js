@@ -958,7 +958,14 @@ class VoiceQuizApp {
             // Create AudioProcessor instance lazily when needed for processing
             if (!window.audioProcessor) {
                 console.log('Creating ResearchAudioProcessor instance for processing...');
-                window.audioProcessor = new ResearchAudioProcessor();
+                try {
+                    // Import ResearchAudioProcessor dynamically
+                    const { ResearchAudioProcessor } = await import('./research-audio-processor.js');
+                    window.audioProcessor = new ResearchAudioProcessor();
+                } catch (importError) {
+                    console.error('Failed to import ResearchAudioProcessor:', importError);
+                    throw new Error('ResearchAudioProcessor not available');
+                }
             }
             
             // Initialize ResearchAudioProcessor if not already initialized

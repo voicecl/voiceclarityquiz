@@ -240,5 +240,6 @@ class ResearchAudioProcessor {
   }
 }
 
-// Export for global use
+// Export for both ES6 modules and global use
+export { ResearchAudioProcessor };
 window.ResearchAudioProcessor = ResearchAudioProcessor; 

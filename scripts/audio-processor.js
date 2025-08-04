@@ -226,5 +226,6 @@ class AudioProcessor {
   }
 }
 
-// Export for global use
+// Export for both ES6 modules and global use
+export { AudioProcessor };
 window.AudioProcessor = AudioProcessor;
