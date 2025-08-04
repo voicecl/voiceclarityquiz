@@ -1,6 +1,6 @@
-// public/scripts/voice-processor-worklet.js
+// scripts/voice-processor-worklet.js
 import { SuperpoweredWebAudio } 
-  from "../lib/Superpowered.js";
+  from "https://cdn.jsdelivr.net/npm/@superpoweredsdk/web@2.7.2";
 
 // Helper: convert cents to ratio
 function centsToRatio(cents) {
@@ -139,6 +139,11 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
     results.medium = [];
     results.deep = [];
     
+    // 🔧 FIXED: Add defensive check before any array assignment
+    for (const ver of ['raw', 'light', 'medium', 'deep']) {
+      if (!results[ver]) results[ver] = [];
+    }
+    
     // 🔍 DEBUG: Store original input for comparison
     const originalInput = new Float32Array(inputBuffer);
     console.log('🔍 Original input energy:', this._computeEnergy(originalInput).toFixed(6));
@@ -251,7 +256,9 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
         
         // 🔧 FIXED: Add defensive check for Superpowered buffer
         if (!superpoweredBuf || !superpoweredBuf.data) {
-          console.error('❌ CRITICAL: Superpowered buffer creation failed!');
+          console.warn('⚠️ WARNING: Superpowered buffer creation failed!');
+          console.warn('⚠️ superpoweredBuf:', superpoweredBuf);
+          console.warn('⚠️ superpoweredBuf.data:', superpoweredBuf?.data);
           throw new Error('Superpowered buffer creation failed');
         }
         
@@ -297,11 +304,13 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
       try {
         const hpBuf = new S.Float32Buffer(buf.length);
         
-        // 🔧 FIXED: Add defensive check for Superpowered buffer
-        if (!hpBuf || !hpBuf.data) {
-          console.error('❌ CRITICAL: High-pass Superpowered buffer creation failed!');
-          throw new Error('High-pass Superpowered buffer creation failed');
-        }
+                  // 🔧 FIXED: Add defensive check for Superpowered buffer
+          if (!hpBuf || !hpBuf.data) {
+            console.warn('⚠️ WARNING: High-pass Superpowered buffer creation failed!');
+            console.warn('⚠️ hpBuf:', hpBuf);
+            console.warn('⚠️ hpBuf.data:', hpBuf?.data);
+            throw new Error('High-pass Superpowered buffer creation failed');
+          }
         
         for (let i = 0; i < buf.length; i++) {
           hpBuf.data[i] = buf[i];
@@ -342,11 +351,13 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
       try {
         const lpBuf = new S.Float32Buffer(buf.length);
         
-        // 🔧 FIXED: Add defensive check for Superpowered buffer
-        if (!lpBuf || !lpBuf.data) {
-          console.error('❌ CRITICAL: Low-pass Superpowered buffer creation failed!');
-          throw new Error('Low-pass Superpowered buffer creation failed');
-        }
+                  // 🔧 FIXED: Add defensive check for Superpowered buffer
+          if (!lpBuf || !lpBuf.data) {
+            console.warn('⚠️ WARNING: Low-pass Superpowered buffer creation failed!');
+            console.warn('⚠️ lpBuf:', lpBuf);
+            console.warn('⚠️ lpBuf.data:', lpBuf?.data);
+            throw new Error('Low-pass Superpowered buffer creation failed');
+          }
         
         for (let i = 0; i < buf.length; i++) {
           lpBuf.data[i] = buf[i];
@@ -389,11 +400,13 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
       try {
         const eqBuf = new S.Float32Buffer(buf.length);
         
-        // 🔧 FIXED: Add defensive check for Superpowered buffer
-        if (!eqBuf || !eqBuf.data) {
-          console.error('❌ CRITICAL: EQ Superpowered buffer creation failed!');
-          throw new Error('EQ Superpowered buffer creation failed');
-        }
+                  // 🔧 FIXED: Add defensive check for Superpowered buffer
+          if (!eqBuf || !eqBuf.data) {
+            console.warn('⚠️ WARNING: EQ Superpowered buffer creation failed!');
+            console.warn('⚠️ eqBuf:', eqBuf);
+            console.warn('⚠️ eqBuf.data:', eqBuf?.data);
+            throw new Error('EQ Superpowered buffer creation failed');
+          }
         
         for (let i = 0; i < buf.length; i++) {
           eqBuf.data[i] = buf[i];
@@ -458,7 +471,9 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
           
           // 🔧 FIXED: Add defensive check for Superpowered buffer
           if (!compBuf || !compBuf.data) {
-            console.error('❌ CRITICAL: Compression Superpowered buffer creation failed!');
+            console.warn('⚠️ WARNING: Compression Superpowered buffer creation failed!');
+            console.warn('⚠️ compBuf:', compBuf);
+            console.warn('⚠️ compBuf.data:', compBuf?.data);
             throw new Error('Compression Superpowered buffer creation failed');
           }
           
@@ -520,6 +535,8 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
         console.error(`❌ CRITICAL: ${ver} processing had NO EFFECT! Audio unchanged.`);
       }
       
+      // 🔧 FIXED: Add defensive check before array assignment
+      if (!results[ver]) results[ver] = [];
       results[ver][0] = buf;
       
       // Clean up processors

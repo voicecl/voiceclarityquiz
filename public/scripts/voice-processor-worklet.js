@@ -101,6 +101,11 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
     results.medium = [];
     results.deep = [];
     
+    // 🔧 FIXED: Add defensive check before any array assignment
+    for (const ver of ['raw', 'light', 'medium', 'deep']) {
+      if (!results[ver]) results[ver] = [];
+    }
+    
     // Process raw version (pass-through)
     results.raw[0] = new Float32Array(inputBuffer);
     
@@ -194,6 +199,8 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
 
       // 9) Final
       console.log(`[${ver}] energy ▶ FINAL:`, energyOf(buf).toFixed(6));
+      // 🔧 FIXED: Add defensive check before array assignment
+      if (!results[ver]) results[ver] = [];
       results[ver][0] = buf;
       
       // Clean up processors
