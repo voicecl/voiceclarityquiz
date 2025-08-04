@@ -907,6 +907,19 @@ class VoiceQuizApp {
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
             const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
             
+            // 🔧 FIXED: Preserve original recording buffer as raw version
+            // Extract the raw audio data as Float32Array (mono channel)
+            const originalRawBuffer = audioBuffer.getChannelData(0);
+            
+            // Store the original raw buffer for the session if not already stored
+            if (!this.sessionRawBuffer) {
+                this.sessionRawBuffer = new Float32Array(originalRawBuffer);
+                console.log('🔧 Stored session raw buffer:', {
+                    length: this.sessionRawBuffer.length,
+                    sampleRate: audioBuffer.sampleRate
+                });
+            }
+            
             // Create AudioProcessor instance lazily when needed for processing
             if (!window.audioProcessor) {
                 console.log('Creating AudioProcessor instance for processing...');
@@ -925,14 +938,50 @@ class VoiceQuizApp {
                 }
             }
             
-            // Process audio with all versions using the AudioProcessor
-            let processedVersions;
+            // 🔧 FIXED: Only process non-raw versions with Superpowered
+            // Create versions object with raw as the original buffer
+            const processedVersions = {
+                raw: this.sessionRawBuffer // Use the preserved original buffer
+            };
+            
+            // Process only light, medium, and deep versions with Superpowered
+            let superpoweredVersions;
             if (window.audioProcessor.useFallback) {
-                console.log('Using fallback processing');
-                processedVersions = await window.audioProcessor.processRecordingFallback(audioBuffer);
+                console.log('Using fallback processing for non-raw versions');
+                superpoweredVersions = await window.audioProcessor.processRecordingFallback(audioBuffer);
             } else {
-                console.log('Using AudioWorklet processing');
-                processedVersions = await window.audioProcessor.processRecording(audioBuffer);
+                console.log('Using AudioWorklet processing for non-raw versions');
+                superpoweredVersions = await window.audioProcessor.processRecording(audioBuffer);
+            }
+            
+            // 🔧 FIXED: Merge raw with processed versions, ensuring raw is truly unprocessed
+            if (superpoweredVersions && !superpoweredVersions.error) {
+                // Add processed versions to our versions object
+                processedVersions.light = superpoweredVersions.light;
+                processedVersions.medium = superpoweredVersions.medium;
+                processedVersions.deep = superpoweredVersions.deep;
+                
+                // 🔍 DEBUG: Verify raw is different from processed versions
+                console.log('🔍 Raw vs processed version verification:');
+                for (const [version, buffer] of Object.entries(processedVersions)) {
+                    if (version === 'raw') continue;
+                    const rawEnergy = this._computeEnergy(processedVersions.raw);
+                    const processedEnergy = this._computeEnergy(buffer);
+                    const energyDiff = Math.abs(rawEnergy - processedEnergy);
+                    console.log(`🔍 Raw vs ${version}:`, {
+                        energyDiff: energyDiff.toFixed(6),
+                        hasProcessing: energyDiff > 0.000001,
+                        rawEnergy: rawEnergy.toFixed(6),
+                        processedEnergy: processedEnergy.toFixed(6)
+                    });
+                    
+                    if (energyDiff <= 0.000001) {
+                        console.error(`❌ CRITICAL: ${version} is identical to raw - processing failed!`);
+                    }
+                }
+            } else {
+                console.error('❌ Superpowered processing failed:', superpoweredVersions?.error);
+                throw new Error(`Audio processing error: ${superpoweredVersions?.error || 'Unknown error'}`);
             }
             
             // (1) Replace Map conversion with direct assignment
@@ -1945,6 +1994,12 @@ class VoiceQuizApp {
             // Send webhook data to Make.com
             await this.sendWebhookData();
             
+            // 🔧 FIXED: Clean up session raw buffer
+            if (this.sessionRawBuffer) {
+                this.sessionRawBuffer = null;
+                console.log('🔧 Cleaned up session raw buffer');
+            }
+            
             // Show results
             this.showResultsPage();
             
@@ -2133,6 +2188,12 @@ class VoiceQuizApp {
         this.processedVersions = null;
         this.selectedVersion = null;
         this.isRegistered = false;
+        
+        // 🔧 FIXED: Clean up session raw buffer for new quiz
+        if (this.sessionRawBuffer) {
+            this.sessionRawBuffer = null;
+            console.log('🔧 Cleaned up session raw buffer for new quiz');
+        }
         
         // Clear all tracked URLs and blobs
         this.audioUrls.clear();

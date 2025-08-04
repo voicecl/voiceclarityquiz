@@ -58,9 +58,8 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
       };
     }
     
-    // "More recent" specs
+    // "More recent" specs - only for processed versions
     const specs = {
-      raw: null, // Pass-through
       light: {
         pitchCents: -60,
         formant: 0.9,
@@ -95,26 +94,17 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
 
     const results = {};
     
-    // 🔧 FIXED: Store all versions as direct Float32Arrays, not arrays
-    // Process raw version (pass-through) - NEVER process this!
-    results.raw = new Float32Array(inputBuffer);
+    // 🔧 FIXED: This worklet should NOT process raw version
+    // Raw version should be handled by the main app as the original buffer
+    // Only process light, medium, and deep versions here
     
-    // 🔍 DEBUG: Verify raw is truly unprocessed
-    console.log('🔍 Raw version created:', {
-      length: results.raw.length,
-      firstSample: results.raw[0],
-      lastSample: results.raw[results.raw.length - 1],
-      isIdenticalToInput: results.raw.length === inputBuffer.length
-    });
-    
-    // Initialize other versions as null (will be processed below)
+    // Initialize versions as null (will be processed below)
     results.light = null;
     results.medium = null;
     results.deep = null;
     
-    // Process other versions
+    // Process all versions (light, medium, deep)
     for (const [ver, p] of Object.entries(specs)) {
-      if (ver === 'raw') continue; // Already handled
       
       // 1) Param dump
       console.log(`[${ver}] params:`, JSON.stringify(p));
@@ -203,16 +193,20 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
       // 9) Final
       console.log(`[${ver}] energy ▶ FINAL:`, energyOf(buf).toFixed(6));
       
-      // 🔍 DEBUG: Verify processed version is different from raw
-      const rawEnergy = energyOf(results.raw);
+      // 🔍 DEBUG: Verify processing had an effect
+      const inputEnergy = energyOf(new Float32Array(inputBuffer));
       const processedEnergy = energyOf(buf);
-      const energyDiff = Math.abs(rawEnergy - processedEnergy);
-      console.log(`🔍 ${ver} vs raw comparison:`, {
-        rawEnergy: rawEnergy.toFixed(6),
+      const energyDiff = Math.abs(inputEnergy - processedEnergy);
+      console.log(`🔍 ${ver} processing verification:`, {
+        inputEnergy: inputEnergy.toFixed(6),
         processedEnergy: processedEnergy.toFixed(6),
         energyDiff: energyDiff.toFixed(6),
         hasProcessing: energyDiff > 0.000001
       });
+      
+      if (energyDiff <= 0.000001) {
+        console.error(`❌ CRITICAL: ${ver} processing had no effect!`);
+      }
       
       // 🔧 FIXED: Store as direct Float32Array, not array
       results[ver] = buf;
