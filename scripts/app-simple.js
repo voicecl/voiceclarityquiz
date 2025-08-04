@@ -262,10 +262,12 @@ class VoiceQuizApp {
         // 2) Shuffle processing mode order
         const shuffledModes = shuffle([...modes]);
         
-        // 3) Build a side-assignment mask so raw appears on right (B) at least 5/9 times
-        // This means processed version appears on left 4/9 times and right 5/9 times
-        const sideMask = Array(4).fill('procLeft')
-            .concat(Array(5).fill('procRight'));
+        // 3) Build a side-assignment mask for balanced raw distribution
+        // We want raw to appear 5 times on left and 5 times on right total
+        // Since catch trial adds 1 left + 1 right, real trials need 4 left + 4 right
+        // This means processed version appears on left 5/9 times and right 4/9 times
+        const sideMask = Array(5).fill('procLeft')
+            .concat(Array(4).fill('procRight'));
         const shuffledSideMask = shuffle([...sideMask]);
         
         // 4) Nine diverse prompts for the real trials
@@ -325,10 +327,13 @@ class VoiceQuizApp {
             sideDistribution: {
                 processedOnLeft: shuffledSideMask.filter(s => s === 'procLeft').length,
                 processedOnRight: shuffledSideMask.filter(s => s === 'procRight').length,
-                rawOnRight: shuffledSideMask.filter(s => s === 'procRight').length, // Raw appears on right (B) 5/9 times
-                rawOnLeft: shuffledSideMask.filter(s => s === 'procLeft').length   // Raw appears on left (A) 4/9 times
+                rawOnRight: shuffledSideMask.filter(s => s === 'procRight').length, // Raw appears on right (B) 4/9 times from real trials
+                rawOnLeft: shuffledSideMask.filter(s => s === 'procLeft').length   // Raw appears on left (A) 5/9 times from real trials
             }
         });
+        
+        // 🔍 ADDED: Comprehensive distribution verification
+        this.logQuizDistribution(allTrials);
         
         return allTrials;
     }
@@ -1083,6 +1088,9 @@ class VoiceQuizApp {
         }
         const currentQuestionData = window.voiceQuizApp.session.questions[this.currentQuestion];
         if (currentQuestionData) {
+            
+            // 🔍 ADDED: Verify audio buffer initialization
+            this.verifyAudioBufferInitialization(randomized, currentQuestionData);
             currentQuestionData.randomizedVersions = {
                 left: leftVersion,
                 right: rightVersion
@@ -1508,17 +1516,24 @@ class VoiceQuizApp {
         }
         
         // Stop any currently playing audio
-            this.stopAllAudio();
+        this.stopAllAudio();
             
         const currentQuestionData = window.voiceQuizApp.session.questions[this.currentQuestion];
         if (!currentQuestionData || !currentQuestionData.urls) {
-            console.error('No audio URLs available for this question');
+            console.error('❌ No audio URLs available for this question');
+            console.error('🔍 Debug info:', {
+                currentQuestion: this.currentQuestion,
+                sessionExists: !!window.voiceQuizApp.session,
+                questionsExist: !!window.voiceQuizApp.session?.questions,
+                questionData: window.voiceQuizApp.session?.questions?.[this.currentQuestion]
+            });
             return;
         }
         
         const audioUrl = currentQuestionData.urls[choice];
         if (!audioUrl) {
-            console.error(`No audio URL found for choice: ${choice}`);
+            console.error(`❌ No audio URL found for choice: ${choice}`);
+            console.error('🔍 Available URLs:', currentQuestionData.urls);
             return;
         }
         
@@ -2346,8 +2361,198 @@ class VoiceQuizApp {
         
         console.log('🔍 === END ALL TRIAL MAPPINGS DEBUG ===');
     }
+    
+    // 🔍 ADDED: Comprehensive quiz distribution verification
+    logQuizDistribution(trials) {
+        console.log('🎯 === QUIZ DISTRIBUTION VERIFICATION ===');
+        
+        if (!trials || trials.length !== 10) {
+            console.error('❌ INVALID: Expected exactly 10 trials, got:', trials?.length || 0);
+            return;
+        }
+        
+        // Initialize counters
+        const distribution = {
+            totalTrials: trials.length,
+            catchTrials: 0,
+            realTrials: 0,
+            processingModes: { light: 0, medium: 0, deep: 0 },
+            rawSideDistribution: { left: 0, right: 0 },
+            versionDistribution: { light: 0, medium: 0, deep: 0, raw: 0 },
+            errors: []
+        };
+        
+        // Analyze each trial
+        console.log('📋 Detailed Trial Analysis:');
+        trials.forEach((trial, index) => {
+            const { type, isCatch, comparisonSetup } = trial;
+            const { leftVersion, rightVersion } = comparisonSetup || {};
+            
+            console.log(`  Question ${index + 1}:`, {
+                type,
+                isCatch,
+                leftVersion,
+                rightVersion,
+                description: isCatch ? '🎯 CATCH TRIAL (raw vs raw)' : `${type} vs raw`
+            });
+            
+            // Count trial types
+            if (isCatch) {
+                distribution.catchTrials++;
+                distribution.versionDistribution.raw += 2; // Both left and right are raw
+            } else {
+                distribution.realTrials++;
+                distribution.processingModes[type]++;
+                
+                // Count versions (one raw, one processed)
+                if (leftVersion === 'raw') distribution.versionDistribution.raw++;
+                if (rightVersion === 'raw') distribution.versionDistribution.raw++;
+                if (leftVersion !== 'raw') distribution.versionDistribution[leftVersion]++;
+                if (rightVersion !== 'raw') distribution.versionDistribution[rightVersion]++;
+            }
+            
+            // Track raw side distribution (only for real trials)
+            if (!isCatch) {
+                if (leftVersion === 'raw') distribution.rawSideDistribution.left++;
+                if (rightVersion === 'raw') distribution.rawSideDistribution.right++;
+            }
+            
+            // Verify logic
+            if (!isCatch) {
+                const rawCount = (leftVersion === 'raw' ? 1 : 0) + (rightVersion === 'raw' ? 1 : 0);
+                if (rawCount !== 1) {
+                    distribution.errors.push(`Question ${index + 1}: Expected exactly 1 raw version, got ${rawCount}`);
+                }
+            } else {
+                if (leftVersion !== 'raw' || rightVersion !== 'raw') {
+                    distribution.errors.push(`Question ${index + 1}: Catch trial should be raw vs raw, got ${leftVersion} vs ${rightVersion}`);
+                }
+            }
+        });
+        
+        // Verify expected distribution
+        const expected = {
+            totalTrials: 10,
+            catchTrials: 1,
+            realTrials: 9,
+            processingModes: { light: 3, medium: 3, deep: 3 },
+            rawSideDistribution: { left: 5, right: 5 }, // Raw on left 5 times, right 5 times (including catch trial)
+            versionDistribution: { light: 3, medium: 3, deep: 3, raw: 11 } // 9 real trials + 2 from catch trial
+        };
+        
+        console.log('📊 ACTUAL Distribution:', distribution);
+        console.log('📊 EXPECTED Distribution:', expected);
+        
+        // Check for discrepancies
+        let hasErrors = false;
+        
+        if (distribution.catchTrials !== expected.catchTrials) {
+            console.error(`❌ Catch trials: Expected ${expected.catchTrials}, got ${distribution.catchTrials}`);
+            hasErrors = true;
+        }
+        
+        if (distribution.realTrials !== expected.realTrials) {
+            console.error(`❌ Real trials: Expected ${expected.realTrials}, got ${distribution.realTrials}`);
+            hasErrors = true;
+        }
+        
+        for (const [mode, expectedCount] of Object.entries(expected.processingModes)) {
+            const actualCount = distribution.processingModes[mode];
+            if (actualCount !== expectedCount) {
+                console.error(`❌ ${mode} trials: Expected ${expectedCount}, got ${actualCount}`);
+                hasErrors = true;
+            }
+        }
+        
+        for (const [side, expectedCount] of Object.entries(expected.rawSideDistribution)) {
+            const actualCount = distribution.rawSideDistribution[side];
+            if (actualCount !== expectedCount) {
+                console.error(`❌ Raw on ${side}: Expected ${expectedCount}, got ${actualCount}`);
+                hasErrors = true;
+            }
+        }
+        
+        for (const [version, expectedCount] of Object.entries(expected.versionDistribution)) {
+            const actualCount = distribution.versionDistribution[version];
+            if (actualCount !== expectedCount) {
+                console.error(`❌ ${version} versions: Expected ${expectedCount}, got ${actualCount}`);
+                hasErrors = true;
+            }
+        }
+        
+        if (distribution.errors.length > 0) {
+            console.error('❌ LOGIC ERRORS FOUND:');
+            distribution.errors.forEach(error => console.error(`  - ${error}`));
+            hasErrors = true;
+        }
+        
+        if (!hasErrors) {
+            console.log('✅ QUIZ DISTRIBUTION VERIFICATION PASSED');
+            console.log('✅ All distributions match expected values');
+            console.log('✅ Raw appears 5 times on right, 5 times on left (including catch trial)');
+            console.log('✅ 3 light, 3 medium, 3 deep, 1 catch trial');
+        } else {
+            console.error('❌ QUIZ DISTRIBUTION VERIFICATION FAILED');
+        }
+        
+                console.log('🎯 === END QUIZ DISTRIBUTION VERIFICATION ===');
+    }
+    
+    // 🔍 ADDED: Verify audio buffer initialization
+    verifyAudioBufferInitialization(randomized, currentQuestionData) {
+        console.log('🔍 === AUDIO BUFFER INITIALIZATION VERIFICATION ===');
+        
+        const verification = {
+            left: {
+                exists: !!randomized.left,
+                isFloat32Array: randomized.left instanceof Float32Array,
+                length: randomized.left?.length || 0,
+                hasData: randomized.left && randomized.left.length > 0,
+                energy: this._computeEnergy(randomized.left || new Float32Array(0))
+            },
+            right: {
+                exists: !!randomized.right,
+                isFloat32Array: randomized.right instanceof Float32Array,
+                length: randomized.right?.length || 0,
+                hasData: randomized.right && randomized.right.length > 0,
+                energy: this._computeEnergy(randomized.right || new Float32Array(0))
+            },
+            errors: []
+        };
+        
+        // Check left audio buffer
+        if (!verification.left.exists) {
+            verification.errors.push('Left audio buffer is undefined/null');
+        } else if (!verification.left.isFloat32Array) {
+            verification.errors.push('Left audio buffer is not a Float32Array');
+        } else if (!verification.left.hasData) {
+            verification.errors.push('Left audio buffer has no data (length = 0)');
+        }
+        
+        // Check right audio buffer
+        if (!verification.right.exists) {
+            verification.errors.push('Right audio buffer is undefined/null');
+        } else if (!verification.right.isFloat32Array) {
+            verification.errors.push('Right audio buffer is not a Float32Array');
+        } else if (!verification.right.hasData) {
+            verification.errors.push('Right audio buffer has no data (length = 0)');
+        }
+        
+        console.log('📊 Audio Buffer Status:', verification);
+        
+        if (verification.errors.length > 0) {
+            console.error('❌ AUDIO BUFFER INITIALIZATION ERRORS:');
+            verification.errors.forEach(error => console.error(`  - ${error}`));
+        } else {
+            console.log('✅ Audio buffers properly initialized');
+            console.log(`✅ Left: ${verification.left.length} samples, energy: ${verification.left.energy.toFixed(6)}`);
+            console.log(`✅ Right: ${verification.right.length} samples, energy: ${verification.right.energy.toFixed(6)}`);
+        }
+        
+        console.log('🔍 === END AUDIO BUFFER INITIALIZATION VERIFICATION ===');
+    }
 
-     // ANALYTICS: Track selection behavior and detect gaming patterns
+    // ANALYTICS: Track selection behavior and detect gaming patterns
      trackSelectionBehavior(version, selectionTime) {
         // Calculate selection latency (time since last audio play)
         const lastPlayTime = this.getLastPlayTime(version);
