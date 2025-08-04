@@ -924,6 +924,17 @@ class VoiceQuizApp {
             
             // (1) Replace Map conversion with direct assignment
             // this.processedVersions = new Map(Object.entries(processedVersions));
+            
+            // 🔧 FIXED: Add proper null/undefined checks for processedVersions
+            if (!processedVersions) {
+                throw new Error('Audio processing returned no versions');
+            }
+            
+            // Check if worklet returned an error
+            if (processedVersions.error) {
+                throw new Error(`Audio processing error: ${processedVersions.error}`);
+            }
+            
             this.processedVersions = processedVersions;
             
             // Get version order with fallback

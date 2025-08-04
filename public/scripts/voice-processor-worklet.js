@@ -48,6 +48,16 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
   _makeVersions(inputBuffer) {
     const S = this.S;
     
+    // 🔧 FIXED: Check if Superpowered is available
+    if (typeof S === 'undefined') {
+      console.error('❌ CRITICAL: Superpowered not loaded in _makeVersions!');
+      // Return empty results with error indication
+      return {
+        error: 'Superpowered not loaded',
+        raw: new Float32Array(inputBuffer) // At least provide raw version
+      };
+    }
+    
     // "More recent" specs
     const specs = {
       raw: null, // Pass-through
