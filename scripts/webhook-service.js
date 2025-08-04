@@ -85,6 +85,9 @@ class WebhookService {
             feedbackReasons: response.feedbackTags || [],
             responseTime: response.responseTime || 0
         }));
+        
+        // 🔧 ENHANCED: Debug webhook payload
+        this.debugWebhookPayload(sessionData, responses);
 
         return {
             // Session metadata
@@ -153,6 +156,32 @@ class WebhookService {
     // Method to clear sent sessions (useful for testing)
     clearSentSessions() {
         this.sentSessions.clear();
+    }
+    
+    // 🔧 ENHANCED: Debug webhook payload
+    debugWebhookPayload(sessionData, responses) {
+        const payload = {
+            sessionId: sessionData.sessionId,
+            userEmail: sessionData.userEmail,
+            responses: responses,
+            analytics: sessionData.analytics,
+            timestamp: new Date().toISOString()
+        };
+        
+        const payloadString = JSON.stringify(payload);
+        const payloadSize = new Blob([payloadString]).size;
+        
+        console.log('🔍 WEBHOOK PAYLOAD DEBUG:');
+        console.log('📏 Payload size:', payloadSize, 'bytes');
+        console.log('📊 Responses count:', responses ? responses.length : 0);
+        console.log('📱 Has analytics:', !!sessionData.analytics);
+        
+        if (payloadSize < 1024) {
+            console.warn('⚠️ Payload seems small - possible data loss');
+            console.log('💾 Full payload:', payload);
+        }
+        
+        return payload;
     }
 }
 

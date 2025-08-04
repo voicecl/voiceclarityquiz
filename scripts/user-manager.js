@@ -389,6 +389,45 @@ class UserManager {
                 timestamp: response.timestamp
             }));
     }
+    
+    // 🔧 FIXED: Add missing getAnalytics method
+    getAnalytics() {
+        if (!this.currentUser) {
+            console.warn('No current user for analytics');
+            return null;
+        }
+        
+        const userResponses = this.getAllResponses();
+        
+        return {
+            userId: this.currentUser.id,
+            userEmail: this.currentUser.email,
+            totalResponses: userResponses.length,
+            responsesSummary: userResponses.map(r => ({
+                questionId: r.questionId,
+                selectedChoice: r.selectedChoice,
+                trialType: r.actualProcessingType,
+                isCatch: r.isCatch,
+                responseTime: r.responseTime,
+                timestamp: r.timestamp
+            })),
+            deviceInfo: this.getDeviceInfo(),
+            sessionStartTime: this.currentUser.registrationDate,
+            sessionCompleteTime: new Date().toISOString()
+        };
+    }
+    
+    // 🔧 FIXED: Add debug method for analytics
+    debugAnalytics() {
+        console.log('🔍 User Manager Debug:', {
+            hasCurrentUser: !!this.currentUser,
+            currentUser: this.currentUser,
+            totalResponses: this.getAllResponses().length,
+            deviceInfo: this.getDeviceInfo()
+        });
+        
+        return this.getAnalytics();
+    }
 }
 
 // Export for global use

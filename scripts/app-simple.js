@@ -498,11 +498,11 @@ class VoiceQuizApp {
             tag.addEventListener('click', () => this.toggleFeedbackTag(tag));
         });
 
-        // Results actions
-        const downloadBtn = document.getElementById('download-results-btn');
-        if (downloadBtn) {
-            downloadBtn.addEventListener('click', () => this.downloadResults());
-        }
+        // Results actions - REMOVED CSV download functionality
+        // const downloadBtn = document.getElementById('download-results-btn');
+        // if (downloadBtn) {
+        //     downloadBtn.addEventListener('click', () => this.downloadResults());
+        // }
 
         const newQuizBtn = document.getElementById('start-new-quiz-btn');
         if (newQuizBtn) {
@@ -2108,7 +2108,7 @@ class VoiceQuizApp {
                 userEmail: userData.email,
                 firstName: userData.firstName,
                 lastName: userData.lastName,
-                startTime: window.userManager.startTime || Date.now(),
+                startTime: window.userManager.currentUser?.registrationDate || new Date().toISOString(),
                 totalDuration: window.userManager.getStudyProgress()?.totalDuration || 0,
                 deviceInfo: window.userManager.deviceInfo,
                 versionOrder: window.userManager.versionOrder,
@@ -2186,71 +2186,72 @@ class VoiceQuizApp {
         return tagNames[tag] || tag;
     }
 
-    downloadResults() {
-        try {
-            // Create CSV content with enhanced headers
-            let csvContent = 'Question,UI Choice,Actual Version,Trial Type,Is Catch Trial,Version Mapping,Reasons,Comments\n';
-            
-            // Add each question's data
-            this.session.questions.forEach((question, index) => {
-                if (index < this.trials.length) {
-                    const trial = this.trials[index];
-                    const reasons = question.reasons ? question.reasons.join('; ') : '';
-                    const comments = question.comment ? question.comment.replace(/"/g, '""') : ''; // Escape quotes
-                    
-                    // Get the actual version name (should be 'raw', 'light', 'medium', or 'deep')
-                    const actualVersion = question.selectedVersion || question.selectedChoice;
-                    
-                    // Get the version mapping for debugging
-                    const versionMapping = question.randomizedVersions ? 
-                        `left:${question.randomizedVersions.left},right:${question.randomizedVersions.right}` : 
-                        'No mapping';
-                    
-                    csvContent += `"${index + 1}","${question.selectedChoice || 'N/A'}","${actualVersion}","${trial.type}","${trial.isCatch}","${versionMapping}","${reasons}","${comments}"\n`;
-                    
-                    // Log each question's data for verification
-                    console.log(`📊 Question ${index + 1} export data:`, {
-                        uiChoice: question.selectedChoice,
-                        actualVersion: actualVersion,
-                        trialType: trial.type,
-                        isCatch: trial.isCatch,
-                        versionMapping: question.randomizedVersions,
-                        reasons: reasons,
-                        comments: comments
-                    });
-                }
-            });
-            
-            // Add summary data
-            csvContent += '\nSummary\n';
-            csvContent += 'Total Questions,7\n';
-            csvContent += 'Completed Questions,' + this.session.questions.length + '\n';
-            csvContent += 'Start Time,' + (this.session.startTime || 'Unknown') + '\n';
-            csvContent += 'End Time,' + new Date().toISOString() + '\n';
-            
-            // Create and download the file
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-            
-            link.setAttribute('href', url);
-            link.setAttribute('download', `voice-quiz-results-${Date.now()}.csv`);
-            link.style.visibility = 'hidden';
-            
-            document.body.appendChild(link);
-        link.click();
-            document.body.removeChild(link);
-            
-            // Clean up the URL
-            URL.revokeObjectURL(url);
-            
-            console.log('✅ Results downloaded as CSV');
-            
-        } catch (error) {
-            console.error('❌ Failed to download results:', error);
-            this.showError('Failed to download results. Please try again.');
-        }
-    }
+    // 🔧 REMOVED: CSV download functionality - users should not be able to download results
+    // downloadResults() {
+    //     try {
+    //         // Create CSV content with enhanced headers
+    //         let csvContent = 'Question,UI Choice,Actual Version,Trial Type,Is Catch Trial,Version Mapping,Reasons,Comments\n';
+    //         
+    //         // Add each question's data
+    //         this.session.questions.forEach((question, index) => {
+    //             if (index < this.trials.length) {
+    //                 const trial = this.trials[index];
+    //                 const reasons = question.reasons ? question.reasons.join('; ') : '';
+    //                 const comments = question.comment ? question.comment.replace(/"/g, '""') : ''; // Escape quotes
+    //                 
+    //                 // Get the actual version name (should be 'raw', 'light', 'medium', or 'deep')
+    //                 const actualVersion = question.selectedVersion || question.selectedChoice;
+    //                 
+    //                 // Get the version mapping for debugging
+    //                 const versionMapping = question.randomizedVersions ? 
+    //                     `left:${question.randomizedVersions.left},right:${question.randomizedVersions.right}` : 
+    //                     'No mapping';
+    //                 
+    //                 csvContent += `"${index + 1}","${question.selectedChoice || 'N/A'}","${actualVersion}","${trial.type}","${trial.isCatch}","${versionMapping}","${reasons}","${comments}"\n`;
+    //                 
+    //                 // Log each question's data for verification
+    //                 console.log(`📊 Question ${index + 1} export data:`, {
+    //                     uiChoice: question.selectedChoice,
+    //                     actualVersion: actualVersion,
+    //                     trialType: trial.type,
+    //                     isCatch: trial.isCatch,
+    //                     versionMapping: question.randomizedVersions,
+    //                     reasons: reasons,
+    //                     comments: comments
+    //                 });
+    //             }
+    //         });
+    //         
+    //         // Add summary data
+    //         csvContent += '\nSummary\n';
+    //         csvContent += 'Total Questions,7\n';
+    //         csvContent += 'Completed Questions,' + this.session.questions.length + '\n';
+    //         csvContent += 'Start Time,' + (this.session.startTime || 'Unknown') + '\n';
+    //         csvContent += 'End Time,' + new Date().toISOString() + '\n';
+    //         
+    //         // Create and download the file
+    //         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    //     const link = document.createElement('a');
+    //         const url = URL.createObjectURL(blob);
+    //         
+    //         link.setAttribute('href', url);
+    //         link.setAttribute('download', `voice-quiz-results-${Date.now()}.csv`);
+    //         link.style.visibility = 'hidden';
+    //         
+    //         document.body.appendChild(link);
+    //     link.click();
+    //         document.body.removeChild(link);
+    //         
+    //         // Clean up the URL
+    //         URL.revokeObjectURL(url);
+    //         
+    //         console.log('✅ Results downloaded as CSV');
+    //         
+    //     } catch (error) {
+    //         console.error('❌ Failed to download results:', error);
+    //         this.showError('Failed to download results. Please try again.');
+    //     }
+    // }
 
     startNewQuiz() {
         // CRITICAL: Stop all audio when starting new quiz

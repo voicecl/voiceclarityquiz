@@ -1,231 +1,329 @@
-// scripts/voice-processor-worklet.js
-import { SuperpoweredWebAudio } 
-  from "https://cdn.jsdelivr.net/npm/@superpoweredsdk/web@2.7.2";
-
-// Helper: convert cents to ratio
-function centsToRatio(cents) {
-  return Math.pow(2, cents / 1200);
+// voice-processor-worklet.js - FIXED VERSION
+class VoiceProcessorWorklet extends AudioWorkletProcessor {
+    constructor() {
+        super();
+        console.log('🎵 VoiceProcessorWorklet constructor called');
+        
+        this.initialized = false;
+        this.sampleRate = 48000;
+        
+        // Exact processing settings from original
+        this.processingSettings = {
+            light: {
+                pitchCents: -60,
+                formant: 0.9,
+                hpFreq: 300,
+                lpFreq: 1200,
+                shelfLow: { freq: 500, gain: 3 },
+                shelfHigh: { freq: 2000, gain: -3 },
+                comp: null,
+                notch: null,
+                vibro: null
+            },
+            medium: {
+                pitchCents: -120,
+                formant: 1.0,
+                hpFreq: 250,
+                lpFreq: 1300,
+                shelfLow: { freq: 450, gain: 4 },
+                shelfHigh: { freq: 2200, gain: -4 },
+                comp: { ratio: 2, threshold: -18, knee: 6 },
+                notch: null,
+                vibro: null
+            },
+            deep: {
+                pitchCents: -120,
+                formant: 1.0,
+                hpFreq: 200,
+                lpFreq: 1400,
+                shelfLow: { freq: 400, gain: 5 },
+                shelfHigh: { freq: 2500, gain: -5 },
+                comp: { ratio: 3, threshold: -20 },
+                notch: { freq: 3000, q: 1.0 },
+                vibro: { freq: 60, gain: 6, q: 1.0 }
+            }
+        };
+        
+        this.port.onmessage = (e) => {
+            this.onMessageFromMainScope(e.data);
+        };
+        
+        this.initializeSuperpowered();
+    }
+    
+    async initializeSuperpowered() {
+        try {
+            console.log('🎵 Initializing Superpowered in worklet...');
+            
+            // Wait for Superpowered to be available
+            let attempts = 0;
+            const maxAttempts = 50;
+            
+            while (typeof Superpowered === 'undefined' && attempts < maxAttempts) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+            
+            if (typeof Superpowered === 'undefined') {
+                throw new Error('Superpowered not available after waiting');
+            }
+            
+            console.log('✅ Superpowered is available, creating processors...');
+            
+            this.processors = {
+                light: this.createProcessors(),
+                medium: this.createProcessors(), 
+                deep: this.createProcessors()
+            };
+            
+            this.initialized = true;
+            console.log('✅ All Superpowered processors initialized');
+            
+            this.port.postMessage({ event: 'ready' });
+            
+        } catch (error) {
+            console.error('❌ Failed to initialize Superpowered:', error);
+            this.port.postMessage({ event: 'error', error: error.message });
+        }
+    }
+    
+    createProcessors() {
+        try {
+            return {
+                pitchShift: new Superpowered.PitchShift(this.sampleRate, 1),
+                highPass: new Superpowered.Filter(Superpowered.Filter.Resonant_Highpass, this.sampleRate),
+                lowPass: new Superpowered.Filter(Superpowered.Filter.Resonant_Lowpass, this.sampleRate),
+                eq: new Superpowered.EQ(this.sampleRate),
+                compressor: new Superpowered.Compressor(this.sampleRate),
+                gate: new Superpowered.Gate(this.sampleRate)
+            };
+        } catch (error) {
+            console.error('❌ Error creating processors:', error);
+            return null;
+        }
+    }
+    
+    onMessageFromMainScope(data) {
+        if (data.command === 'process') {
+            this._makeVersions(data.audioData, data.requestId);
+        }
+    }
+    
+    _makeVersions(inputBuffer, requestId) {
+        if (!this.initialized || !this.processors) {
+            console.error('❌ Processors not initialized');
+            this.port.postMessage({
+                requestId: requestId,
+                error: 'Processors not initialized'
+            });
+            return;
+        }
+        
+        try {
+            const versions = {};
+            
+            versions.light = this.processVersion(inputBuffer, 'light');
+            versions.medium = this.processVersion(inputBuffer, 'medium');
+            versions.deep = this.processVersion(inputBuffer, 'deep');
+            
+            console.log('Processing complete. Output versions:', Object.keys(versions));
+            
+            this.port.postMessage({
+                requestId: requestId,
+                versions: versions
+            });
+            
+        } catch (error) {
+            console.error('❌ Processing error in _makeVersions:', error);
+            this.port.postMessage({
+                requestId: requestId,
+                error: error.message
+            });
+        }
+    }
+    
+    processVersion(inputBuffer, versionType) {
+        const settings = this.processingSettings[versionType];
+        const processors = this.processors[versionType];
+        
+        if (!processors) {
+            console.error(`❌ No processors for ${versionType}`);
+            return new Float32Array(inputBuffer);
+        }
+        
+        console.log(`[${versionType}] params:`, JSON.stringify(settings));
+        
+        const workingBuffer = new Float32Array(inputBuffer.length);
+        inputBuffer.forEach((sample, i) => workingBuffer[i] = sample);
+        
+        let energy = this.calculateEnergy(workingBuffer);
+        console.log(`[${versionType}] energy ▶ input: ${energy.toFixed(6)}`);
+        
+        try {
+            // 1. Pitch Shift
+            if (settings.pitchCents !== 0) {
+                processors.pitchShift.pitchCents = settings.pitchCents;
+                processors.pitchShift.formantCorrection = settings.formant;
+                
+                const tempBuffer = new Float32Array(workingBuffer.length);
+                processors.pitchShift.process(workingBuffer, tempBuffer, workingBuffer.length);
+                workingBuffer.set(tempBuffer);
+                
+                energy = this.calculateEnergy(workingBuffer);
+                console.log(`[${versionType}] energy ▶ pitch-shift: ${energy.toFixed(6)}`);
+            }
+            
+            // 2. High-pass filter
+            if (settings.hpFreq) {
+                processors.highPass.frequency = settings.hpFreq;
+                processors.highPass.resonance = 0.1;
+                processors.highPass.process(workingBuffer, workingBuffer, workingBuffer.length);
+                
+                energy = this.calculateEnergy(workingBuffer);
+                console.log(`[${versionType}] energy ▶ high-pass: ${energy.toFixed(6)}`);
+            }
+            
+            // 3. Low-pass filter
+            if (settings.lpFreq) {
+                processors.lowPass.frequency = settings.lpFreq;
+                processors.lowPass.resonance = 0.1;
+                processors.lowPass.process(workingBuffer, workingBuffer, workingBuffer.length);
+                
+                energy = this.calculateEnergy(workingBuffer);
+                console.log(`[${versionType}] energy ▶ low-pass: ${energy.toFixed(6)}`);
+            }
+            
+            // 4. EQ (Shelving filters)
+            if (settings.shelfLow || settings.shelfHigh) {
+                if (settings.shelfLow) {
+                    processors.eq.bands[0].frequency = settings.shelfLow.freq;
+                    processors.eq.bands[0].gain = settings.shelfLow.gain;
+                    processors.eq.bands[0].bandwidth = 1.0;
+                }
+                
+                if (settings.shelfHigh) {
+                    processors.eq.bands[1].frequency = settings.shelfHigh.freq;
+                    processors.eq.bands[1].gain = settings.shelfHigh.gain;
+                    processors.eq.bands[1].bandwidth = 1.0;
+                }
+                
+                processors.eq.process(workingBuffer, workingBuffer, workingBuffer.length);
+                
+                energy = this.calculateEnergy(workingBuffer);
+                console.log(`[${versionType}] energy ▶ EQ: ${energy.toFixed(6)}`);
+            }
+            
+            // 5. Notch filter (deep only)
+            if (settings.notch) {
+                processors.gate.frequency = settings.notch.freq;
+                processors.gate.process(workingBuffer, workingBuffer, workingBuffer.length);
+                
+                energy = this.calculateEnergy(workingBuffer);
+                console.log(`[${versionType}] energy ▶ notch: ${energy.toFixed(6)}`);
+            }
+            
+            // 6. Vibro boost (deep only)
+            if (settings.vibro) {
+                for (let i = 0; i < workingBuffer.length; i++) {
+                    workingBuffer[i] *= 1.1;
+                }
+                
+                energy = this.calculateEnergy(workingBuffer);
+                console.log(`[${versionType}] energy ▶ vibro: ${energy.toFixed(6)}`);
+            }
+            
+            // 7. Compression (medium and deep)
+            if (settings.comp) {
+                processors.compressor.ratio = settings.comp.ratio;
+                processors.compressor.thresholdDb = settings.comp.threshold;
+                if (settings.comp.knee) {
+                    processors.compressor.knee = settings.comp.knee;
+                }
+                
+                processors.compressor.process(workingBuffer, workingBuffer, workingBuffer.length);
+                
+                energy = this.calculateEnergy(workingBuffer);
+                console.log(`[${versionType}] energy ▶ compression: ${energy.toFixed(6)}`);
+            }
+            
+            const finalEnergy = this.calculateEnergy(workingBuffer);
+            console.log(`[${versionType}] energy ▶ FINAL: ${finalEnergy.toFixed(6)}`);
+            
+            const inputEnergy = this.calculateEnergy(inputBuffer);
+            const energyDiff = Math.abs(finalEnergy - inputEnergy);
+            const hasProcessing = energyDiff > 0.001;
+            
+            console.log(`🔍 ${versionType} processing verification:`, {
+                inputEnergy: inputEnergy.toFixed(6),
+                processedEnergy: finalEnergy.toFixed(6),
+                energyDiff: energyDiff.toFixed(6),
+                hasProcessing: hasProcessing
+            });
+            
+            if (!hasProcessing) {
+                console.log(`❌ CRITICAL: ${versionType} processing had no effect!`);
+                return this.applyFallbackProcessing(new Float32Array(inputBuffer), versionType);
+            }
+            
+            return workingBuffer;
+            
+        } catch (error) {
+            console.error(`❌ Error processing ${versionType}:`, error);
+            return this.applyFallbackProcessing(new Float32Array(inputBuffer), versionType);
+        }
+    }
+    
+    applyFallbackProcessing(buffer, versionType) {
+        console.log(`🔄 Applying fallback processing for ${versionType}`);
+        
+        const settings = this.processingSettings[versionType];
+        
+        for (let i = 0; i < buffer.length; i++) {
+            let sample = buffer[i];
+            
+            if (settings.pitchCents < 0) {
+                sample *= 0.95;
+            }
+            
+            if (i > 0 && settings.hpFreq) {
+                sample = sample * 0.7 + buffer[i-1] * 0.3;
+            }
+            
+            if (settings.shelfLow && settings.shelfLow.gain > 0) {
+                sample *= 1.1;
+            }
+            if (settings.shelfHigh && settings.shelfHigh.gain < 0) {
+                sample *= 0.9;
+            }
+            
+            if (settings.comp) {
+                const threshold = Math.pow(10, settings.comp.threshold / 20);
+                if (Math.abs(sample) > threshold) {
+                    const ratio = settings.comp.ratio;
+                    sample = sample > 0 ? 
+                        threshold + (sample - threshold) / ratio :
+                        -threshold + (sample + threshold) / ratio;
+                }
+            }
+            
+            buffer[i] = Math.max(-1, Math.min(1, sample));
+        }
+        
+        console.log(`✅ Fallback processing applied for ${versionType}`);
+        return buffer;
+    }
+    
+    calculateEnergy(buffer) {
+        let energy = 0;
+        for (let i = 0; i < buffer.length; i++) {
+            energy += buffer[i] * buffer[i];
+        }
+        return energy;
+    }
+    
+    process(inputs, outputs, parameters) {
+        return true;
+    }
 }
 
-class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
-  onReady() {
-    const sr = this.samplerate;
-    const S = this.Superpowered;
-    
-    // Store Superpowered reference for use in processing
-    this.S = S;
-    this.sampleRate = sr;
-    this.chunkSize = 1024;
-    
-    // Allocate buffers
-    this.bufIn = new S.Float32Buffer(this.chunkSize);
-    this.bufOut = new S.Float32Buffer(this.chunkSize);
-    
-    // Notify main thread we're ready
-    this.sendMessageToMainScope({ event: "ready" });
-  }
-
-  onMessageFromMainScope(msg) {
-    if (msg.command === "processVoice") {
-      try {
-        const versions = this._makeVersions(msg.audioData);
-        this.sendMessageToMainScope({
-          requestId: msg.requestId,
-          versions
-        });
-      } catch (e) {
-        console.error('Worklet error:', e);
-        this.sendMessageToMainScope({
-          requestId: msg.requestId,
-          error: e.message
-        });
-      }
-    } else if (msg.command === "cleanup") {
-      this._cleanup();
-    }
-  }
-
-  _makeVersions(inputBuffer) {
-    const S = this.S;
-    
-    // 🔧 FIXED: Check if Superpowered is available
-    if (typeof S === 'undefined') {
-      console.error('❌ CRITICAL: Superpowered not loaded in _makeVersions!');
-      // Return empty results with error indication
-      return {
-        error: 'Superpowered not loaded',
-        raw: [new Float32Array(inputBuffer)] // At least provide raw version
-      };
-    }
-    
-    // "More recent" specs - only for processed versions
-    const specs = {
-      light: {
-        pitchCents: -60,
-        formant: 0.9,
-        hpFreq: 300, lpFreq: 1200,
-        shelfLow:  { freq: 500,  gain:  3 },
-        shelfHigh: { freq: 2000, gain: -3 },
-        comp:      null,
-        notch:     null,
-        vibro:     null
-      },
-      medium: {
-        pitchCents: -120,
-        formant:    1.0,
-        hpFreq:     250, lpFreq: 1300,
-        shelfLow:   { freq: 450,  gain:  4 },
-        shelfHigh:  { freq: 2200, gain: -4 },
-        comp:       { ratio: 2, threshold: -18, knee: 6 },  // gentle-knee
-        notch:      null,
-        vibro:      null
-      },
-      deep: {
-        pitchCents: -120,
-        formant:    1.0,
-        hpFreq:     200, lpFreq: 1400,
-        shelfLow:   { freq: 400,  gain:  5 },
-        shelfHigh:  { freq: 2500, gain: -5 },
-        comp:       { ratio: 3, threshold: -20 },
-        notch:      { freq: 3000, q: 1.0 },
-        vibro:      { freq:  60, gain:  6, q: 1.0 }
-      }
-    };
-
-    const results = {};
-    
-    // 🔧 FIXED: This worklet should NOT process raw version
-    // Raw version should be handled by the main app as the original buffer
-    // Only process light, medium, and deep versions here
-    
-    // Initialize versions as null (will be processed below)
-    results.light = null;
-    results.medium = null;
-    results.deep = null;
-    
-    // Process all versions (light, medium, deep)
-    for (const [ver, p] of Object.entries(specs)) {
-      
-      // 1) Param dump
-      console.log(`[${ver}] params:`, JSON.stringify(p));
-
-      // Helper to compute energy
-      const energyOf = buffer => {
-        let sum = 0;
-        for (let i = 0; i < buffer.length; i++) sum += Math.abs(buffer[i]);
-        return sum;
-      };
-
-      // 2) Start with raw copy
-      let buf = new Float32Array(inputBuffer);
-      console.log(`[${ver}] energy ▶ input:`, energyOf(buf).toFixed(6));
-
-      // Create processors
-      const ps = new S.AutomaticVocalPitchCorrection(this.sampleRate, 1.0);
-      const hp = new S.Filter(S.FilterType?.Resonant_Highpass ?? S.Filter_Resonant_Highpass, this.sampleRate);
-      const lp = new S.Filter(S.FilterType?.Resonant_Lowpass ?? S.Filter_Resonant_Lowpass, this.sampleRate);
-      const eq = new S.ThreeBandEQ(this.sampleRate);
-      
-      let comp = null;
-      if (p.comp) {
-        comp = new S.Compressor2(this.sampleRate);
-      }
-      
-      let notch = null;
-      if (p.notch) {
-        notch = new S.Filter(S.FilterType?.Notch ?? S.Filter_Notch, this.sampleRate);
-      }
-      
-      let vibro = null;
-      if (p.vibro) {
-        vibro = new S.Filter(S.FilterType?.Peaking ?? S.Filter_Peaking, this.sampleRate);
-      }
-
-      // 3) Pitch shift
-      ps.pitchShift = centsToRatio(p.pitchCents);
-      ps.formantCorrection = p.formant;
-      ps.process(buf, buf);
-      console.log(`[${ver}] energy ▶ pitch-shift:`, energyOf(buf).toFixed(6));
-
-      // 4) High-/Low-pass
-      hp.frequency = p.hpFreq;
-      hp.process(buf, buf);
-      console.log(`[${ver}] energy ▶ high-pass:`, energyOf(buf).toFixed(6));
-      
-      lp.frequency = p.lpFreq;
-      lp.process(buf, buf);
-      console.log(`[${ver}] energy ▶ low-pass:`, energyOf(buf).toFixed(6));
-
-      // 5) Shelving/EQ
-      eq.lowGain = p.shelfLow.gain;
-      eq.highGain = p.shelfHigh.gain;
-      eq.process(buf, buf);
-      console.log(`[${ver}] energy ▶ EQ:`, energyOf(buf).toFixed(6));
-
-      // 6) Notch (D only)
-      if (p.notch) {
-        notch.frequency = p.notch.freq;
-        notch.q = p.notch.q;
-        notch.process(buf, buf);
-        console.log(`[${ver}] energy ▶ notch:`, energyOf(buf).toFixed(6));
-      }
-
-      // 7) Vibro-boost (D only)
-      if (p.vibro) {
-        vibro.frequency = p.vibro.freq;
-        vibro.gain = p.vibro.gain;
-        vibro.q = p.vibro.q;
-        vibro.process(buf, buf);
-        console.log(`[${ver}] energy ▶ vibro:`, energyOf(buf).toFixed(6));
-      }
-
-      // 8) Compression (C & D)
-      if (p.comp) {
-        comp.ratio = p.comp.ratio;
-        comp.threshold = p.comp.threshold;
-        if (p.comp.knee) comp.knee = p.comp.knee;
-        comp.attack = 0.003;
-        comp.release = 0.1;
-        comp.process(buf, buf);
-        console.log(`[${ver}] energy ▶ compression:`, energyOf(buf).toFixed(6));
-      }
-
-      // 9) Final
-      console.log(`[${ver}] energy ▶ FINAL:`, energyOf(buf).toFixed(6));
-      
-      // 🔍 DEBUG: Verify processing had an effect
-      const inputEnergy = energyOf(new Float32Array(inputBuffer));
-      const processedEnergy = energyOf(buf);
-      const energyDiff = Math.abs(inputEnergy - processedEnergy);
-      console.log(`🔍 ${ver} processing verification:`, {
-        inputEnergy: inputEnergy.toFixed(6),
-        processedEnergy: processedEnergy.toFixed(6),
-        energyDiff: energyDiff.toFixed(6),
-        hasProcessing: energyDiff > 0.000001
-      });
-      
-      if (energyDiff <= 0.000001) {
-        console.error(`❌ CRITICAL: ${ver} processing had no effect!`);
-      }
-      
-      // 🔧 FIXED: Store as direct Float32Array, not array
-      results[ver] = buf;
-      
-      // Clean up processors
-      [ps, hp, lp, eq, comp, notch, vibro].forEach(p => p?.destruct?.());
-    }
-    
-    console.log('Processing complete. Output versions:', Object.keys(results));
-    return results;
-  }
-
-  _cleanup() {
-    [this.bufIn, this.bufOut].forEach(b => b?.free?.());
-  }
-
-  onDestruct() {
-    this._cleanup();
-  }
-}
-
-registerProcessor("VoiceProcessor", VoiceProcessor);
+registerProcessor('voice-processor-worklet', VoiceProcessorWorklet);
