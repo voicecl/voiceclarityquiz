@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fallback Fix Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .success { border-color: #4CAF50; background: #f1f8e9; }
+        .error { border-color: #f44336; background: #ffebee; }
+        button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #1976D2; }
+        pre {
+            background: #f8f8f8;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Fallback Fix Test</h1>
+    <p>Testing the Float32Array fallback fix for audio processing.</p>
+
+    <div class="test-section">
+        <h2>Test Controls</h2>
+        <button onclick="testFallbackProcessing()">Test Fallback Processing</button>
+        <button onclick="testAudioURLCreation()">Test Audio URL Creation</button>
+        <button onclick="runFullTest()">Run Full Test</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Results</h2>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        // Load the audio processors
+        async function loadProcessors() {
+            // Load the scripts
+            await import('./scripts/research-audio-processor.js');
+            await import('./scripts/audio-processor.js');
+            
+            console.log('✅ Audio processors loaded');
+        }
+
+        // Create a test audio buffer
+        function createTestAudioBuffer() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const sampleRate = audioContext.sampleRate;
+            const duration = 1; // 1 second
+            const length = sampleRate * duration;
+            
+            const audioBuffer = audioContext.createBuffer(1, length, sampleRate);
+            const channelData = audioBuffer.getChannelData(0);
+            
+            // Create a simple sine wave
+            for (let i = 0; i < length; i++) {
+                channelData[i] = Math.sin(2 * Math.PI * 440 * i / sampleRate) * 0.1;
+            }
+            
+            return audioBuffer;
+        }
+
+        // Test fallback processing
+        async function testFallbackProcessing() {
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'test-section';
+            resultDiv.innerHTML = '<h3>Testing Fallback Processing...</h3>';
+            document.getElementById('results').appendChild(resultDiv);
+
+            try {
+                await loadProcessors();
+                
+                const audioBuffer = createTestAudioBuffer();
+                console.log('🎵 Created test audio buffer:', {
+                    length: audioBuffer.length,
+                    sampleRate: audioBuffer.sampleRate,
+                    numberOfChannels: audioBuffer.numberOfChannels
+                });
+
+                // Test ResearchAudioProcessor fallback
+                const researchProcessor = new window.ResearchAudioProcessor();
+                const researchResult = await researchProcessor.processRecordingFallback(audioBuffer);
+                
+                console.log('🔬 Research processor fallback result:', researchResult);
+                
+                // Test AudioProcessor fallback
+                const audioProcessor = new window.AudioProcessor();
+                const audioResult = await audioProcessor.processRecordingFallback(audioBuffer);
+                
+                console.log('🎵 Audio processor fallback result:', audioResult);
+                
+                // Check data types
+                const researchTypes = {
+                    light: researchResult.light.constructor.name,
+                    medium: researchResult.medium.constructor.name,
+                    deep: researchResult.deep.constructor.name
+                };
+                
+                const audioTypes = {
+                    light: audioResult.light.constructor.name,
+                    medium: audioResult.medium.constructor.name,
+                    deep: audioResult.deep.constructor.name
+                };
+                
+                const allFloat32Arrays = 
+                    researchTypes.light === 'Float32Array' &&
+                    researchTypes.medium === 'Float32Array' &&
+                    researchTypes.deep === 'Float32Array' &&
+                    audioTypes.light === 'Float32Array' &&
+                    audioTypes.medium === 'Float32Array' &&
+                    audioTypes.deep === 'Float32Array';
+                
+                if (allFloat32Arrays) {
+                    resultDiv.className = 'test-section success';
+                    resultDiv.innerHTML = `
+                        <h3>✅ Fallback Processing Test - SUCCESS</h3>
+                        <p><strong>Research Processor Types:</strong> ${JSON.stringify(researchTypes)}</p>
+                        <p><strong>Audio Processor Types:</strong> ${JSON.stringify(audioTypes)}</p>
+                        <p><strong>All Float32Arrays:</strong> ✅</p>
+                        <p><strong>Data Lengths:</strong> Light: ${researchResult.light.length}, Medium: ${researchResult.medium.length}, Deep: ${researchResult.deep.length}</p>
+                    `;
+                } else {
+                    resultDiv.className = 'test-section error';
+                    resultDiv.innerHTML = `
+                        <h3>❌ Fallback Processing Test - FAILED</h3>
+                        <p><strong>Research Processor Types:</strong> ${JSON.stringify(researchTypes)}</p>
+                        <p><strong>Audio Processor Types:</strong> ${JSON.stringify(audioTypes)}</p>
+                        <p><strong>Expected:</strong> All Float32Array</p>
+                    `;
+                }
+                
+            } catch (error) {
+                resultDiv.className = 'test-section error';
+                resultDiv.innerHTML = `
+                    <h3>❌ Fallback Processing Test - ERROR</h3>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                `;
+            }
+        }
+
+        // Test audio URL creation
+        async function testAudioURLCreation() {
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'test-section';
+            resultDiv.innerHTML = '<h3>Testing Audio URL Creation...</h3>';
+            document.getElementById('results').appendChild(resultDiv);
+
+            try {
+                await loadProcessors();
+                
+                const audioBuffer = createTestAudioBuffer();
+                const researchProcessor = new window.ResearchAudioProcessor();
+                const result = await researchProcessor.processRecordingFallback(audioBuffer);
+                
+                // Test creating audio URLs from Float32Arrays
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const urls = {};
+                
+                for (const [version, data] of Object.entries(result)) {
+                    try {
+                        // Create AudioBuffer from Float32Array
+                        const buffer = audioContext.createBuffer(1, data.length, audioContext.sampleRate);
+                        buffer.getChannelData(0).set(data);
+                        
+                        // Convert to WAV blob
+                        const wavBlob = audioBufferToWavBlob(data, audioContext.sampleRate);
+                        const url = URL.createObjectURL(wavBlob);
+                        urls[version] = url;
+                        
+                        console.log(`✅ Created URL for ${version}:`, url);
+                    } catch (error) {
+                        console.error(`❌ Failed to create URL for ${version}:`, error);
+                        urls[version] = null;
+                    }
+                }
+                
+                const allUrlsCreated = Object.values(urls).every(url => url !== null);
+                
+                if (allUrlsCreated) {
+                    resultDiv.className = 'test-section success';
+                    resultDiv.innerHTML = `
+                        <h3>✅ Audio URL Creation Test - SUCCESS</h3>
+                        <p><strong>URLs Created:</strong> ${Object.keys(urls).length}</p>
+                        <pre>${JSON.stringify(urls, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.className = 'test-section error';
+                    resultDiv.innerHTML = `
+                        <h3>❌ Audio URL Creation Test - FAILED</h3>
+                        <p><strong>URLs:</strong> ${JSON.stringify(urls)}</p>
+                    `;
+                }
+                
+            } catch (error) {
+                resultDiv.className = 'test-section error';
+                resultDiv.innerHTML = `
+                    <h3>❌ Audio URL Creation Test - ERROR</h3>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                `;
+            }
+        }
+
+        // WAV conversion function (from your existing code)
+        function audioBufferToWavBlob(audioData, sampleRate = 44100, numChannels = 1) {
+            const length = audioData.length;
+            const buffer = new ArrayBuffer(44 + length * 2);
+            const view = new DataView(buffer);
+            
+            const writeString = (offset, string) => {
+                for (let i = 0; i < string.length; i++) {
+                    view.setUint8(offset + i, string.charCodeAt(i));
+                }
+            };
+            
+            writeString(0, 'RIFF');
+            view.setUint32(4, 36 + length * 2, true);
+            writeString(8, 'WAVE');
+            writeString(12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, numChannels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * numChannels * 2, true);
+            view.setUint16(32, numChannels * 2, true);
+            view.setUint16(34, 16, true);
+            writeString(36, 'data');
+            view.setUint32(40, length * 2, true);
+            
+            const volume = 1;
+            let index = 44;
+            for (let i = 0; i < length; i++) {
+                view.setInt16(index, audioData[i] * (0x7FFF * volume), true);
+                index += 2;
+            }
+            
+            return new Blob([buffer], { type: 'audio/wav' });
+        }
+
+        // Run full test
+        async function runFullTest() {
+            document.getElementById('results').innerHTML = '';
+            await testFallbackProcessing();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            await testAudioURLCreation();
+        }
+
+        // Auto-run on page load
+        window.addEventListener('load', () => {
+            console.log('🚀 Starting fallback fix test...');
+        });
+    </script>
+</body>
+</html> 

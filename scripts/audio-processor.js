@@ -25,22 +25,45 @@ class AudioProcessor {
         console.log('✅ AudioContext created with sample rate:', this.audioContext.sampleRate);
       }
 
-      // 2. Load Superpowered SDK
+      // 2. Load Superpowered SDK with multiple version attempts
       console.log('🎵 Loading Superpowered SDK...');
       
-      // First, let's check what's actually available in the module
-      const module = await import('https://cdn.jsdelivr.net/npm/@superpoweredsdk/web@2.6.5');
-      console.log('🔍 Available exports:', Object.keys(module));
+      const versionsToTry = [
+        'https://cdn.jsdelivr.net/npm/@superpoweredsdk/web@2.6.5',
+        'https://cdn.jsdelivr.net/npm/@superpoweredsdk/web@2.6.4',
+        'https://cdn.jsdelivr.net/npm/@superpoweredsdk/web@2.7.0',
+        'https://unpkg.com/@superpoweredsdk/web@2.6.5',
+        'https://unpkg.com/@superpoweredsdk/web@2.6.4'
+      ];
       
-      // Try to get the exports we need
-      const SuperpoweredGlue = module.SuperpoweredGlue || module.default?.SuperpoweredGlue;
-      const SuperpoweredWebAudio = module.SuperpoweredWebAudio || module.default?.SuperpoweredWebAudio;
+      let SuperpoweredGlue, SuperpoweredWebAudio;
+      let successfulVersion = null;
       
-      if (!SuperpoweredGlue || !SuperpoweredWebAudio) {
-        throw new Error(`Superpowered exports not found. Available: ${Object.keys(module).join(', ')}`);
+      for (const versionUrl of versionsToTry) {
+        try {
+          console.log(`🔍 Trying version: ${versionUrl}`);
+          const module = await import(versionUrl);
+          console.log('🔍 Available exports:', Object.keys(module));
+          
+          // Try to get the exports we need
+          SuperpoweredGlue = module.SuperpoweredGlue || module.default?.SuperpoweredGlue;
+          SuperpoweredWebAudio = module.SuperpoweredWebAudio || module.default?.SuperpoweredWebAudio;
+          
+          if (SuperpoweredGlue && SuperpoweredWebAudio) {
+            successfulVersion = versionUrl;
+            console.log(`✅ Superpowered SDK loaded successfully from: ${versionUrl}`);
+            break;
+          } else {
+            console.warn(`⚠️ Version ${versionUrl} has no required exports. Available: ${Object.keys(module).join(', ')}`);
+          }
+        } catch (versionError) {
+          console.warn(`⚠️ Version ${versionUrl} failed:`, versionError.message);
+        }
       }
       
-      console.log('✅ Superpowered SDK loaded');
+      if (!SuperpoweredGlue || !SuperpoweredWebAudio) {
+        throw new Error(`All Superpowered versions failed. Available versions tried: ${versionsToTry.join(', ')}`);
+      }
 
       // 3. Initialize Superpowered WASM
       this.superpowered = await SuperpoweredGlue.Instantiate(
@@ -149,9 +172,9 @@ class AudioProcessor {
     const audioData = Array.from(audioBuffer.getChannelData(0));
     
     return {
-      light: this.processBasicFilter(audioData, 0.8),
-      medium: this.processBasicFilter(audioData, 0.6),
-      deep: this.processBasicFilter(audioData, 0.4)
+      light: new Float32Array(this.processBasicFilter(audioData, 0.8)),
+      medium: new Float32Array(this.processBasicFilter(audioData, 0.6)),
+      deep: new Float32Array(this.processBasicFilter(audioData, 0.4))
     };
   }
 
