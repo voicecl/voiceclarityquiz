@@ -25,23 +25,25 @@ class AudioProcessor {
         console.log('✅ AudioContext created with sample rate:', this.audioContext.sampleRate);
       }
 
-      // 2. Load Superpowered SDK from npm package
-      console.log('🎵 Loading Superpowered SDK from npm package...');
+      // 2. Get Superpowered from window object (loaded via CDN)
+      console.log('🎵 Loading Superpowered SDK from CDN...');
       
-      try {
-        const { SuperpoweredGlue, SuperpoweredWebAudio } = await import('@superpoweredsdk/web');
-        console.log('✅ Superpowered SDK loaded successfully from npm package');
-      } catch (importError) {
-        console.error('❌ Failed to import Superpowered SDK:', importError);
-        throw new Error('Superpowered SDK not available');
+      const Superpowered = window.Superpowered;
+      const SuperpoweredGlue = window.SuperpoweredGlue;
+      const SuperpoweredWebAudio = SuperpoweredGlue.SuperpoweredWebAudio;
+      
+      if (!Superpowered || !SuperpoweredGlue) {
+        throw new Error("Superpowered SDK not available. Check if CDN script is loaded in index.html.");
       }
+      
+      console.log('✅ Superpowered SDK loaded successfully from CDN');
 
       // 3. Initialize Superpowered WASM
       // ✅ Using Superpowered's official public test key for development only
       // ⚠️ Do not replace with a real license in public or testing environments
       this.superpowered = await SuperpoweredGlue.Instantiate(
         'ExampleLicenseKey-WillExpire-OnNextUpdate',
-        '/static/superpowered/superpowered.wasm'
+        Superpowered
       );
       console.log('✅ Superpowered WebAssembly initialized');
 
@@ -137,27 +139,7 @@ class AudioProcessor {
     });
   }
 
-  // Fallback method for when Superpowered is not available
-  async processRecordingFallback(audioBuffer) {
-    console.log('🔄 Using fallback processing without Superpowered...');
-    
-    // Simple fallback processing without Superpowered
-    const audioData = Array.from(audioBuffer.getChannelData(0));
-    
-    return {
-      light: new Float32Array(this.processBasicFilter(audioData, 0.8)),
-      medium: new Float32Array(this.processBasicFilter(audioData, 0.6)),
-      deep: new Float32Array(this.processBasicFilter(audioData, 0.4))
-    };
-  }
 
-  processBasicFilter(audioData, intensity) {
-    // Basic low-pass filter simulation
-    return audioData.map((sample, i) => {
-      if (i === 0) return sample * intensity;
-      return (sample + audioData[i-1]) * 0.5 * intensity;
-    });
-  }
 
   cleanup() {
     console.log('🧹 Cleaning up AudioProcessor...');

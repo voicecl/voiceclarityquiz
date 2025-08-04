@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Voice Personalization Listening Quiz</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://superpowered.com/WebAudio/SuperpoweredWebAudio.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles/main.css">
 </head>
@@ -313,7 +314,7 @@
     </div>
 
     <!-- Scripts - Load in correct order -->
-    <!-- Superpowered SDK will be imported in audio-processor.js -->
+    <!-- Superpowered SDK loaded via CDN in head section -->
     <script src="scripts/user-manager.js"></script>
     <script src="scripts/webhook-service.js"></script>
     <script type="module" src="scripts/audio-recorder.js"></script>

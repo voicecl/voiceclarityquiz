@@ -979,13 +979,8 @@ class VoiceQuizApp {
             // Initialize ResearchAudioProcessor if not already initialized
             if (!window.audioProcessor.isInitialized) {
                 console.log('Initializing ResearchAudioProcessor for processing...');
-                try {
-                    await window.audioProcessor.initialize();
-                    console.log('ResearchAudioProcessor initialized with research-grade AudioWorklet');
-                } catch (error) {
-                    console.warn('ResearchAudioProcessor initialization failed, using fallback:', error);
-                    window.audioProcessor.useFallback = true;
-                }
+                await window.audioProcessor.initialize();
+                console.log('ResearchAudioProcessor initialized with research-grade AudioWorklet');
             }
             
             // 🔧 FIXED: Only process non-raw versions with Superpowered
@@ -995,14 +990,8 @@ class VoiceQuizApp {
             };
             
             // Process only light, medium, and deep versions with Superpowered
-            let superpoweredVersions;
-            if (window.audioProcessor.useFallback) {
-                console.log('Using fallback processing for non-raw versions');
-                superpoweredVersions = await window.audioProcessor.processRecordingFallback(audioBuffer);
-            } else {
-                console.log('Using AudioWorklet processing for non-raw versions');
-                superpoweredVersions = await window.audioProcessor.processRecording(audioBuffer);
-            }
+            console.log('Using AudioWorklet processing for non-raw versions');
+            const superpoweredVersions = await window.audioProcessor.processRecording(audioBuffer);
             
             // 🔧 FIXED: Merge raw with processed versions, ensuring raw is truly unprocessed
             if (superpoweredVersions && !superpoweredVersions.error) {
