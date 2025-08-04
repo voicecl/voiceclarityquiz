@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Syntax Fix Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .success { border-color: #4CAF50; background: #f1f8e9; }
+        .error { border-color: #f44336; background: #ffebee; }
+        button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #1976D2; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Syntax Fix Test</h1>
+    <p>Testing that the syntax error in research-audio-processor.js is fixed.</p>
+
+    <div class="test-section">
+        <h2>Test Controls</h2>
+        <button onclick="testSyntax()">Test Syntax</button>
+        <button onclick="testImport()">Test Import</button>
+        <button onclick="runFullTest()">Run Full Test</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Results</h2>
+        <div id="results"></div>
+    </div>
+
+    <script type="module">
+        // Test syntax by attempting to import
+        async function testSyntax() {
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'test-section';
+            resultDiv.innerHTML = '<h3>Testing Syntax...</h3>';
+            document.getElementById('results').appendChild(resultDiv);
+
+            try {
+                console.log('🔍 Testing syntax of research-audio-processor.js...');
+                
+                // Try to import the file - this will fail if there are syntax errors
+                const { ResearchAudioProcessor } = await import('./scripts/research-audio-processor.js');
+                console.log('✅ Syntax test passed - file loaded successfully');
+                
+                resultDiv.className = 'test-section success';
+                resultDiv.innerHTML = `
+                    <h3>✅ Syntax Test - SUCCESS</h3>
+                    <p><strong>Import:</strong> ✅ research-audio-processor.js loaded without syntax errors</p>
+                    <p><strong>Class:</strong> ✅ ResearchAudioProcessor class available</p>
+                    <p><strong>Constructor:</strong> ${ResearchAudioProcessor.name}</p>
+                `;
+                
+            } catch (error) {
+                console.error('❌ Syntax test failed:', error);
+                
+                resultDiv.className = 'test-section error';
+                resultDiv.innerHTML = `
+                    <h3>❌ Syntax Test - FAILED</h3>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                    <p><strong>Type:</strong> ${error.name}</p>
+                    <p><strong>Stack:</strong> ${error.stack}</p>
+                `;
+            }
+        }
+
+        // Test full import and initialization
+        async function testImport() {
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'test-section';
+            resultDiv.innerHTML = '<h3>Testing Full Import...</h3>';
+            document.getElementById('results').appendChild(resultDiv);
+
+            try {
+                console.log('🔍 Testing full import and initialization...');
+                
+                // Import the class
+                const { ResearchAudioProcessor } = await import('./scripts/research-audio-processor.js');
+                console.log('✅ Import successful');
+                
+                // Create instance
+                const processor = new ResearchAudioProcessor();
+                console.log('✅ Instance created');
+                
+                // Try initialization (this will likely fail due to Superpowered, but shouldn't be a syntax error)
+                try {
+                    await processor.initialize();
+                    console.log('✅ Initialization successful');
+                } catch (initError) {
+                    console.log('⚠️ Initialization failed (expected due to Superpowered):', initError.message);
+                }
+                
+                resultDiv.className = 'test-section success';
+                resultDiv.innerHTML = `
+                    <h3>✅ Full Import Test - SUCCESS</h3>
+                    <p><strong>Import:</strong> ✅ ResearchAudioProcessor imported successfully</p>
+                    <p><strong>Instance:</strong> ✅ Instance created successfully</p>
+                    <p><strong>Initialization:</strong> ✅ No syntax errors during initialization</p>
+                `;
+                
+            } catch (error) {
+                console.error('❌ Full import test failed:', error);
+                
+                resultDiv.className = 'test-section error';
+                resultDiv.innerHTML = `
+                    <h3>❌ Full Import Test - FAILED</h3>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                    <p><strong>Type:</strong> ${error.name}</p>
+                `;
+            }
+        }
+
+        // Run full test
+        async function runFullTest() {
+            document.getElementById('results').innerHTML = '';
+            await testSyntax();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            await testImport();
+        }
+
+        // Make functions available globally
+        window.testSyntax = testSyntax;
+        window.testImport = testImport;
+        window.runFullTest = runFullTest;
+
+        // Auto-run on page load
+        window.addEventListener('load', () => {
+            console.log('🚀 Starting syntax fix test...');
+        });
+    </script>
+</body>
+</html> 

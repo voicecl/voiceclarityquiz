@@ -65,6 +65,7 @@ class ResearchAudioProcessor {
         throw new Error(`All Superpowered versions failed. Available versions tried: ${versionsToTry.join(', ')}`);
       }
 
+      try {
         // 3. Initialize Superpowered WASM
         this.superpowered = await SuperpoweredGlue.Instantiate(
           'ExampleLicenseKey-WillExpire-OnNextUpdate'
