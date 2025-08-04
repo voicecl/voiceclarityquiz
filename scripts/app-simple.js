@@ -957,18 +957,18 @@ class VoiceQuizApp {
             
             // Create AudioProcessor instance lazily when needed for processing
             if (!window.audioProcessor) {
-                console.log('Creating AudioProcessor instance for processing...');
-                window.audioProcessor = new AudioProcessor();
+                console.log('Creating ResearchAudioProcessor instance for processing...');
+                window.audioProcessor = new ResearchAudioProcessor();
             }
             
-            // Initialize AudioProcessor if not already initialized
+            // Initialize ResearchAudioProcessor if not already initialized
             if (!window.audioProcessor.isInitialized) {
-                console.log('Initializing AudioProcessor for processing...');
+                console.log('Initializing ResearchAudioProcessor for processing...');
                 try {
                     await window.audioProcessor.initialize();
-                    console.log('AudioProcessor initialized with AudioWorklet');
+                    console.log('ResearchAudioProcessor initialized with research-grade AudioWorklet');
                 } catch (error) {
-                    console.warn('AudioWorklet initialization failed, using fallback:', error);
+                    console.warn('ResearchAudioProcessor initialization failed, using fallback:', error);
                     window.audioProcessor.useFallback = true;
                 }
             }

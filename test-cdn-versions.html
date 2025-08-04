@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CDN Version Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .result { padding: 10px; margin: 5px 0; border-radius: 4px; }
+        .success { background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .info { background-color: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Testing Superpowered SDK CDN Versions</h1>
+    <p>This test will find which CDN version works on GitHub Pages.</p>
+    
+    <div id="results"></div>
+    
+    <script>
+        const results = document.getElementById('results');
+        let workingVersion = null;
+        
+        async function testVersions() {
+            const versions = ['2.6.5', '2.6.4', '2.7.0', '2.7.1', '2.7.2'];
+            
+            results.innerHTML = '<div class="result info">Testing CDN versions...</div>';
+            
+            for (const version of versions) {
+                try {
+                    console.log(`Testing version ${version}...`);
+                    const url = `https://cdn.jsdelivr.net/npm/@superpoweredsdk/web@${version}`;
+                    const module = await import(url);
+                    
+                    if (module.SuperpoweredGlue && module.SuperpoweredWebAudio) {
+                        const successMsg = `<div class="result success">✅ Version ${version} WORKS: ${url}</div>`;
+                        results.innerHTML += successMsg;
+                        console.log(`WORKING VERSION: ${version}`);
+                        workingVersion = version;
+                        break;
+                    } else {
+                        results.innerHTML += `<div class="result error">❌ Version ${version} - Missing required exports</div>`;
+                    }
+                } catch (error) {
+                    results.innerHTML += `<div class="result error">❌ Version ${version} failed: ${error.message}</div>`;
+                    console.error(`Version ${version} failed:`, error);
+                }
+            }
+            
+            if (workingVersion) {
+                results.innerHTML += `
+                    <div class="result success">
+                        <h3>🎉 Recommended Action:</h3>
+                        <p>Use version <strong>${workingVersion}</strong> in your voice-processor.js and audio-processor.js files.</p>
+                        <p>Replace:</p>
+                        <code>import { SuperpoweredWebAudio } from 'https://cdn.jsdelivr.net/npm/@superpoweredsdk/web@2.7.2/dist/Superpowered.js';</code>
+                        <p>With:</p>
+                        <code>import { SuperpoweredWebAudio } from 'https://cdn.jsdelivr.net/npm/@superpoweredsdk/web@${workingVersion}';</code>
+                    </div>
+                `;
+            } else {
+                results.innerHTML += `
+                    <div class="result error">
+                        <h3>⚠️ No CDN versions worked!</h3>
+                        <p>You'll need to use the fallback implementation without Superpowered SDK.</p>
+                        <p>Create voice-processor-fallback.js and update audio-processor.js to use it.</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // Auto-run the test
+        testVersions();
+    </script>
+</body>
+</html> 

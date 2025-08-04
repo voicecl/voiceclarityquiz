@@ -27,13 +27,13 @@ class AudioProcessor {
 
       // 2. Load Superpowered SDK
       console.log('🎵 Loading Superpowered SDK...');
-      const { SuperpoweredGlue, SuperpoweredWebAudio } = await import('https://cdn.jsdelivr.net/npm/@superpoweredsdk/web@2.7.2');
+      const { SuperpoweredGlue, SuperpoweredWebAudio } = await import('https://cdn.jsdelivr.net/npm/@superpoweredsdk/web@2.6.5');
       console.log('✅ Superpowered SDK loaded');
 
       // 3. Initialize Superpowered WASM
       this.superpowered = await SuperpoweredGlue.Instantiate(
         'ExampleLicenseKey-WillExpire-OnNextUpdate',
-        'https://cdn.jsdelivr.net/npm/@superpoweredsdk/web@2.7.2/dist/superpowered-npm.wasm'
+        'https://cdn.jsdelivr.net/npm/@superpoweredsdk/web@2.6.5/dist/superpowered-npm.wasm'
       );
       console.log('✅ Superpowered WebAssembly initialized');
 
@@ -48,7 +48,7 @@ class AudioProcessor {
       console.log('🎵 Creating AudioWorklet with corrected API...');
       
       this.workletNode = await this.webaudioManager.createAudioNodeAsync(
-        './scripts/voice-processor-worklet.js',  // url (use root-level scripts version)
+        './scripts/voice-processor-research.js',  // url (use the research-grade version)
         'VoiceProcessor',                       // className
         (message) => {                          // callback
           this.handleWorkletMessage(message);
@@ -74,9 +74,9 @@ class AudioProcessor {
   handleWorkletMessage(data) {
     console.log('📨 Worklet message received:', data);
     
-    if (data.event === 'ready') {
-      console.log('🎵 VoiceProcessor worklet ready');
-    } else if (data.event === 'error') {
+    if (data.type === 'ready') {
+      console.log('🎵 VoiceProcessor worklet ready:', data.message);
+    } else if (data.type === 'error') {
       console.error('❌ VoiceProcessor error:', data.error);
       // Don't throw here - let it continue and show what's available
       console.log('⚠️ Continuing with limited DSP capabilities...');
