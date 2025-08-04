@@ -95,7 +95,7 @@ class VoiceProcessorWorklet extends AudioWorkletProcessor {
                 lowPass: new Superpowered.Filter(Superpowered.Filter.Resonant_Lowpass, this.sampleRate),
                 eq: new Superpowered.EQ(this.sampleRate),
                 compressor: new Superpowered.Compressor(this.sampleRate),
-                gate: new Superpowered.Gate(this.sampleRate)
+                notch: new Superpowered.Filter(Superpowered.Filter.Resonant_Notch, this.sampleRate)
             };
         } catch (error) {
             console.error('❌ Error creating processors:', error);
@@ -166,11 +166,15 @@ class VoiceProcessorWorklet extends AudioWorkletProcessor {
                 processors.pitchShift.formantCorrection = settings.formant;
                 
                 const tempBuffer = new Float32Array(workingBuffer.length);
-                processors.pitchShift.process(workingBuffer, tempBuffer, workingBuffer.length);
-                workingBuffer.set(tempBuffer);
+                const success = processors.pitchShift.process(workingBuffer, tempBuffer, workingBuffer.length);
                 
-                energy = this.calculateEnergy(workingBuffer);
-                console.log(`[${versionType}] energy ▶ pitch-shift: ${energy.toFixed(6)}`);
+                if (success) {
+                    workingBuffer.set(tempBuffer);
+                    energy = this.calculateEnergy(workingBuffer);
+                    console.log(`[${versionType}] energy ▶ pitch-shift: ${energy.toFixed(6)}`);
+                } else {
+                    console.warn(`[${versionType}] PitchShift returned no output on this frame`);
+                }
             }
             
             // 2. High-pass filter
@@ -215,17 +219,27 @@ class VoiceProcessorWorklet extends AudioWorkletProcessor {
             
             // 5. Notch filter (deep only)
             if (settings.notch) {
-                processors.gate.frequency = settings.notch.freq;
-                processors.gate.process(workingBuffer, workingBuffer, workingBuffer.length);
+                processors.notch.frequency = settings.notch.freq;
+                processors.notch.resonance = settings.notch.q || 1.0;
+                processors.notch.process(workingBuffer, workingBuffer, workingBuffer.length);
                 
                 energy = this.calculateEnergy(workingBuffer);
                 console.log(`[${versionType}] energy ▶ notch: ${energy.toFixed(6)}`);
             }
             
-            // 6. Vibro boost (deep only)
+            // 6. Vibro boost (deep only) - LFO tremolo effect
             if (settings.vibro) {
+                const vibroFreq = settings.vibro.freq || 60; // Hz
+                const vibroDepth = settings.vibro.gain || 6; // dB
+                const sampleRate = this.sampleRate;
+                
                 for (let i = 0; i < workingBuffer.length; i++) {
-                    workingBuffer[i] *= 1.1;
+                    // Create LFO modulation
+                    const time = i / sampleRate;
+                    const lfo = Math.sin(2 * Math.PI * vibroFreq * time);
+                    const modulation = 1 + (vibroDepth / 20) * lfo; // Convert dB to linear
+                    
+                    workingBuffer[i] *= modulation;
                 }
                 
                 energy = this.calculateEnergy(workingBuffer);
@@ -326,4 +340,4 @@ class VoiceProcessorWorklet extends AudioWorkletProcessor {
     }
 }
 
-registerProcessor('voice-processor-worklet', VoiceProcessorWorklet);
+registerProcessor('VoiceProcessor', VoiceProcessorWorklet);
