@@ -246,21 +246,36 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
       const beforePitchEnergy = energyOf(buf);
       
       // 🔧 FIXED: Try different approach - use Superpowered buffer
-      const superpoweredBuf = new S.Float32Buffer(buf.length);
-      for (let i = 0; i < buf.length; i++) {
-        superpoweredBuf.data[i] = buf[i];
+      try {
+        const superpoweredBuf = new S.Float32Buffer(buf.length);
+        
+        // 🔧 FIXED: Add defensive check for Superpowered buffer
+        if (!superpoweredBuf || !superpoweredBuf.data) {
+          console.error('❌ CRITICAL: Superpowered buffer creation failed!');
+          throw new Error('Superpowered buffer creation failed');
+        }
+        
+        for (let i = 0; i < buf.length; i++) {
+          superpoweredBuf.data[i] = buf[i];
+        }
+        
+        ps.pitchShift = centsToRatio(p.pitchCents);
+        ps.formantCorrection = p.formant;
+        ps.process(superpoweredBuf, superpoweredBuf);
+        
+        // Copy back to original buffer
+        for (let i = 0; i < buf.length; i++) {
+          buf[i] = superpoweredBuf.data[i];
+        }
+        
+        superpoweredBuf.free();
+      } catch (error) {
+        console.error('❌ Superpowered buffer processing failed, using direct processing:', error);
+        // Fallback to direct processing
+        ps.pitchShift = centsToRatio(p.pitchCents);
+        ps.formantCorrection = p.formant;
+        ps.process(buf, buf);
       }
-      
-      ps.pitchShift = centsToRatio(p.pitchCents);
-      ps.formantCorrection = p.formant;
-      ps.process(superpoweredBuf, superpoweredBuf);
-      
-      // Copy back to original buffer
-      for (let i = 0; i < buf.length; i++) {
-        buf[i] = superpoweredBuf.data[i];
-      }
-      
-      superpoweredBuf.free();
       
       const afterPitchEnergy = energyOf(buf);
       console.log(`[${ver}] energy ▶ pitch-shift:`, afterPitchEnergy.toFixed(6));
@@ -279,20 +294,34 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
       const beforeHpEnergy = energyOf(buf);
       
       // Use Superpowered buffer for high-pass
-      const hpBuf = new S.Float32Buffer(buf.length);
-      for (let i = 0; i < buf.length; i++) {
-        hpBuf.data[i] = buf[i];
+      try {
+        const hpBuf = new S.Float32Buffer(buf.length);
+        
+        // 🔧 FIXED: Add defensive check for Superpowered buffer
+        if (!hpBuf || !hpBuf.data) {
+          console.error('❌ CRITICAL: High-pass Superpowered buffer creation failed!');
+          throw new Error('High-pass Superpowered buffer creation failed');
+        }
+        
+        for (let i = 0; i < buf.length; i++) {
+          hpBuf.data[i] = buf[i];
+        }
+        
+        hp.frequency = p.hpFreq;
+        hp.process(hpBuf, hpBuf);
+        
+        // Copy back to original buffer
+        for (let i = 0; i < buf.length; i++) {
+          buf[i] = hpBuf.data[i];
+        }
+        
+        hpBuf.free();
+      } catch (error) {
+        console.error('❌ High-pass Superpowered buffer processing failed, using direct processing:', error);
+        // Fallback to direct processing
+        hp.frequency = p.hpFreq;
+        hp.process(buf, buf);
       }
-      
-      hp.frequency = p.hpFreq;
-      hp.process(hpBuf, hpBuf);
-      
-      // Copy back to original buffer
-      for (let i = 0; i < buf.length; i++) {
-        buf[i] = hpBuf.data[i];
-      }
-      
-      hpBuf.free();
       
       const afterHpEnergy = energyOf(buf);
       console.log(`[${ver}] energy ▶ high-pass:`, afterHpEnergy.toFixed(6));
@@ -310,20 +339,34 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
       const beforeLpEnergy = energyOf(buf);
       
       // Use Superpowered buffer for low-pass
-      const lpBuf = new S.Float32Buffer(buf.length);
-      for (let i = 0; i < buf.length; i++) {
-        lpBuf.data[i] = buf[i];
+      try {
+        const lpBuf = new S.Float32Buffer(buf.length);
+        
+        // 🔧 FIXED: Add defensive check for Superpowered buffer
+        if (!lpBuf || !lpBuf.data) {
+          console.error('❌ CRITICAL: Low-pass Superpowered buffer creation failed!');
+          throw new Error('Low-pass Superpowered buffer creation failed');
+        }
+        
+        for (let i = 0; i < buf.length; i++) {
+          lpBuf.data[i] = buf[i];
+        }
+        
+        lp.frequency = p.lpFreq;
+        lp.process(lpBuf, lpBuf);
+        
+        // Copy back to original buffer
+        for (let i = 0; i < buf.length; i++) {
+          buf[i] = lpBuf.data[i];
+        }
+        
+        lpBuf.free();
+      } catch (error) {
+        console.error('❌ Low-pass Superpowered buffer processing failed, using direct processing:', error);
+        // Fallback to direct processing
+        lp.frequency = p.lpFreq;
+        lp.process(buf, buf);
       }
-      
-      lp.frequency = p.lpFreq;
-      lp.process(lpBuf, lpBuf);
-      
-      // Copy back to original buffer
-      for (let i = 0; i < buf.length; i++) {
-        buf[i] = lpBuf.data[i];
-      }
-      
-      lpBuf.free();
       
       const afterLpEnergy = energyOf(buf);
       console.log(`[${ver}] energy ▶ low-pass:`, afterLpEnergy.toFixed(6));
@@ -343,21 +386,36 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
       const beforeEqEnergy = energyOf(buf);
       
       // Use Superpowered buffer for EQ
-      const eqBuf = new S.Float32Buffer(buf.length);
-      for (let i = 0; i < buf.length; i++) {
-        eqBuf.data[i] = buf[i];
+      try {
+        const eqBuf = new S.Float32Buffer(buf.length);
+        
+        // 🔧 FIXED: Add defensive check for Superpowered buffer
+        if (!eqBuf || !eqBuf.data) {
+          console.error('❌ CRITICAL: EQ Superpowered buffer creation failed!');
+          throw new Error('EQ Superpowered buffer creation failed');
+        }
+        
+        for (let i = 0; i < buf.length; i++) {
+          eqBuf.data[i] = buf[i];
+        }
+        
+        eq.lowGain = p.shelfLow.gain;
+        eq.highGain = p.shelfHigh.gain;
+        eq.process(eqBuf, eqBuf);
+        
+        // Copy back to original buffer
+        for (let i = 0; i < buf.length; i++) {
+          buf[i] = eqBuf.data[i];
+        }
+        
+        eqBuf.free();
+      } catch (error) {
+        console.error('❌ EQ Superpowered buffer processing failed, using direct processing:', error);
+        // Fallback to direct processing
+        eq.lowGain = p.shelfLow.gain;
+        eq.highGain = p.shelfHigh.gain;
+        eq.process(buf, buf);
       }
-      
-      eq.lowGain = p.shelfLow.gain;
-      eq.highGain = p.shelfHigh.gain;
-      eq.process(eqBuf, eqBuf);
-      
-      // Copy back to original buffer
-      for (let i = 0; i < buf.length; i++) {
-        buf[i] = eqBuf.data[i];
-      }
-      
-      eqBuf.free();
       
       const afterEqEnergy = energyOf(buf);
       console.log(`[${ver}] energy ▶ EQ:`, afterEqEnergy.toFixed(6));
@@ -395,24 +453,42 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
         const beforeCompEnergy = energyOf(buf);
         
         // Use Superpowered buffer for compression
-        const compBuf = new S.Float32Buffer(buf.length);
-        for (let i = 0; i < buf.length; i++) {
-          compBuf.data[i] = buf[i];
+        try {
+          const compBuf = new S.Float32Buffer(buf.length);
+          
+          // 🔧 FIXED: Add defensive check for Superpowered buffer
+          if (!compBuf || !compBuf.data) {
+            console.error('❌ CRITICAL: Compression Superpowered buffer creation failed!');
+            throw new Error('Compression Superpowered buffer creation failed');
+          }
+          
+          for (let i = 0; i < buf.length; i++) {
+            compBuf.data[i] = buf[i];
+          }
+          
+          comp.ratio = p.comp.ratio;
+          comp.threshold = p.comp.threshold;
+          if (p.comp.knee) comp.knee = p.comp.knee;
+          comp.attack = 0.003;
+          comp.release = 0.1;
+          comp.process(compBuf, compBuf);
+          
+          // Copy back to original buffer
+          for (let i = 0; i < buf.length; i++) {
+            buf[i] = compBuf.data[i];
+          }
+          
+          compBuf.free();
+        } catch (error) {
+          console.error('❌ Compression Superpowered buffer processing failed, using direct processing:', error);
+          // Fallback to direct processing
+          comp.ratio = p.comp.ratio;
+          comp.threshold = p.comp.threshold;
+          if (p.comp.knee) comp.knee = p.comp.knee;
+          comp.attack = 0.003;
+          comp.release = 0.1;
+          comp.process(buf, buf);
         }
-        
-        comp.ratio = p.comp.ratio;
-        comp.threshold = p.comp.threshold;
-        if (p.comp.knee) comp.knee = p.comp.knee;
-        comp.attack = 0.003;
-        comp.release = 0.1;
-        comp.process(compBuf, compBuf);
-        
-        // Copy back to original buffer
-        for (let i = 0; i < buf.length; i++) {
-          buf[i] = compBuf.data[i];
-        }
-        
-        compBuf.free();
         
         const afterCompEnergy = energyOf(buf);
         console.log(`[${ver}] energy ▶ compression:`, afterCompEnergy.toFixed(6));
