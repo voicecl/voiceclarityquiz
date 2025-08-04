@@ -253,22 +253,21 @@ class VoiceQuizApp {
     }
 
     generateTrials() {
-        console.log('🎯 Generating counter-balanced trial set...');
+        console.log('🎯 Generating counter-balanced trial set with guaranteed 5 raw-left, 5 raw-right distribution...');
         
         // 1) Build nine real trials: 3× each processing mode
         const modes = ['light', 'medium', 'deep']
             .flatMap(type => Array(3).fill(type));
         
-        // 2) Shuffle processing mode order
+        // 2) Shuffle processing mode order for variety
         const shuffledModes = shuffle([...modes]);
         
-        // 3) Build a side-assignment mask for balanced raw distribution
-        // We want raw to appear 5 times on left and 5 times on right total
-        // Since catch trial adds 1 left + 1 right, real trials need 4 left + 4 right
+        // 3) Build counter-balanced side assignment for guaranteed distribution
+        // Target: 5 raw-left, 5 raw-right total (including catch trial)
+        // Since catch trial contributes 1 raw-left + 1 raw-right, real trials need 4 raw-left + 4 raw-right
         // This means processed version appears on left 5/9 times and right 4/9 times
-        const sideMask = Array(5).fill('procLeft')
-            .concat(Array(4).fill('procRight'));
-        const shuffledSideMask = shuffle([...sideMask]);
+        const sideMask = Array(5).fill('procLeft')  // Raw on right (processed on left)
+            .concat(Array(4).fill('procRight'));    // Raw on left (processed on right)
         
         // 4) Nine diverse prompts for the real trials
         const prompts = [
@@ -283,9 +282,9 @@ class VoiceQuizApp {
             "What's your favorite season of the year and what do you enjoy about it?"
         ];
         
-        // 5) Build the 9 test trials with proper integration
+        // 5) Build the 9 test trials with guaranteed side distribution
         const testTrials = shuffledModes.map((mode, i) => {
-            const leftIsProc = shuffledSideMask[i] === 'procLeft';
+            const leftIsProc = sideMask[i] === 'procLeft';
             
             return {
                 type: mode,
@@ -318,17 +317,26 @@ class VoiceQuizApp {
         const catchPosition = 2 + Math.floor(Math.random() * (allTrials.length - 3)); // Positions 2-7
         allTrials.splice(catchPosition, 0, catchTrial);
         
-        console.log('✅ Generated trial set:', {
+        // 8) Verify the guaranteed distribution
+        const rawLeftCount = allTrials.filter(trial => 
+            !trial.isCatch && trial.comparisonSetup.leftVersion === 'raw'
+        ).length + (catchTrial.comparisonSetup.leftVersion === 'raw' ? 1 : 0);
+        
+        const rawRightCount = allTrials.filter(trial => 
+            !trial.isCatch && trial.comparisonSetup.rightVersion === 'raw'
+        ).length + (catchTrial.comparisonSetup.rightVersion === 'raw' ? 1 : 0);
+        
+        console.log('✅ Generated trial set with guaranteed distribution:', {
             totalTrials: allTrials.length,
             realTrials: testTrials.length,
             catchTrials: 1,
             catchPosition: catchPosition + 1,
             processingModes: shuffledModes,
-            sideDistribution: {
-                processedOnLeft: shuffledSideMask.filter(s => s === 'procLeft').length,
-                processedOnRight: shuffledSideMask.filter(s => s === 'procRight').length,
-                rawOnRight: shuffledSideMask.filter(s => s === 'procRight').length, // Raw appears on right (B) 4/9 times from real trials
-                rawOnLeft: shuffledSideMask.filter(s => s === 'procLeft').length   // Raw appears on left (A) 5/9 times from real trials
+            guaranteedDistribution: {
+                rawOnLeft: rawLeftCount,   // Should be exactly 5
+                rawOnRight: rawRightCount, // Should be exactly 5
+                processedOnLeft: sideMask.filter(s => s === 'procLeft').length,
+                processedOnRight: sideMask.filter(s => s === 'procRight').length
             }
         });
         
