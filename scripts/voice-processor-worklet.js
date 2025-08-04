@@ -95,19 +95,22 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
 
     const results = {};
     
-    // 🔧 FIXED: Initialize all version arrays defensively
-    results.raw = [];
-    results.light = [];
-    results.medium = [];
-    results.deep = [];
+    // 🔧 FIXED: Store all versions as direct Float32Arrays, not arrays
+    // Process raw version (pass-through) - NEVER process this!
+    results.raw = new Float32Array(inputBuffer);
     
-    // 🔧 FIXED: Add defensive check before any array assignment
-    for (const ver of ['raw', 'light', 'medium', 'deep']) {
-      if (!results[ver]) results[ver] = [];
-    }
+    // 🔍 DEBUG: Verify raw is truly unprocessed
+    console.log('🔍 Raw version created:', {
+      length: results.raw.length,
+      firstSample: results.raw[0],
+      lastSample: results.raw[results.raw.length - 1],
+      isIdenticalToInput: results.raw.length === inputBuffer.length
+    });
     
-    // Process raw version (pass-through)
-    results.raw[0] = new Float32Array(inputBuffer);
+    // Initialize other versions as null (will be processed below)
+    results.light = null;
+    results.medium = null;
+    results.deep = null;
     
     // Process other versions
     for (const [ver, p] of Object.entries(specs)) {
@@ -199,9 +202,20 @@ class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
 
       // 9) Final
       console.log(`[${ver}] energy ▶ FINAL:`, energyOf(buf).toFixed(6));
-      // 🔧 FIXED: Add defensive check before array assignment
-      if (!results[ver]) results[ver] = [];
-      results[ver][0] = buf;
+      
+      // 🔍 DEBUG: Verify processed version is different from raw
+      const rawEnergy = energyOf(results.raw);
+      const processedEnergy = energyOf(buf);
+      const energyDiff = Math.abs(rawEnergy - processedEnergy);
+      console.log(`🔍 ${ver} vs raw comparison:`, {
+        rawEnergy: rawEnergy.toFixed(6),
+        processedEnergy: processedEnergy.toFixed(6),
+        energyDiff: energyDiff.toFixed(6),
+        hasProcessing: energyDiff > 0.000001
+      });
+      
+      // 🔧 FIXED: Store as direct Float32Array, not array
+      results[ver] = buf;
       
       // Clean up processors
       [ps, hp, lp, eq, comp, notch, vibro].forEach(p => p?.destruct?.());
