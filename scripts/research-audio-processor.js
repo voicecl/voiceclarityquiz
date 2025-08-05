@@ -67,7 +67,7 @@ class ResearchAudioProcessor {
   }
 
   // Add this new method to the class
-  async waitForSuperpowered(timeout = 5000) {
+  async waitForSuperpowered(timeout = 10000) {
     const start = Date.now();
     
     console.log('⏳ Waiting for Superpowered SDK to become available...');
@@ -80,10 +80,11 @@ class ResearchAudioProcessor {
     }
 
     if (!window.SuperpoweredGlue || !window.SuperpoweredGlue.SuperpoweredWebAudio) {
-      throw new Error('❌ Superpowered SDK failed to load within timeout. Check CDN or internet.');
+      throw new Error('❌ Superpowered SDK failed to load within 10s. Check CDN or internet.');
     }
 
-    console.log('✅ Superpowered SDK is now available');
+    const elapsed = Date.now() - start;
+    console.log(`✅ Superpowered SDK is now available (took ${elapsed}ms)`);
     return window.SuperpoweredGlue.SuperpoweredWebAudio;
   }
 

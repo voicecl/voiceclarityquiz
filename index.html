@@ -5,12 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Voice Personalization Listening Quiz</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://superpowered.com/WebAudio/SuperpoweredWebAudio.js"></script>
+    <script src="https://superpowered.com/WebAudio/SuperpoweredWebAudio.js?v=1.0.0"></script>
     <script>
       // Verify Superpowered SDK loaded correctly
       window.addEventListener('load', function() {
+        console.log('✅ Page loaded');
         setTimeout(() => {
-          if (window.SuperpoweredGlue && window.SuperpoweredGlue.SuperpoweredWebAudio) {
+          console.log('⏳ Verifying Superpowered SDK presence...');
+          console.log('🔎 SuperpoweredGlue:', window.SuperpoweredGlue);
+          console.log('🔎 SuperpoweredGlue.SuperpoweredWebAudio:', window?.SuperpoweredGlue?.SuperpoweredWebAudio);
+
+          if (window.SuperpoweredGlue?.SuperpoweredWebAudio) {
             console.log('✅ Superpowered SDK loaded successfully');
           } else {
             console.error('❌ Superpowered SDK failed to load');
