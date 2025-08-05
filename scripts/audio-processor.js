@@ -28,13 +28,13 @@ class AudioProcessor {
       // 2. Get Superpowered from window object (loaded via CDN)
       console.log('🎵 Loading Superpowered SDK from CDN...');
       
+      if (!window.Superpowered || !window.SuperpoweredGlue) {
+        throw new Error("❌ Superpowered SDK not available. Check if CDN script is loaded in index.html");
+      }
+      
       const Superpowered = window.Superpowered;
       const SuperpoweredGlue = window.SuperpoweredGlue;
       const SuperpoweredWebAudio = SuperpoweredGlue.SuperpoweredWebAudio;
-      
-      if (!Superpowered || !SuperpoweredGlue) {
-        throw new Error("Superpowered SDK not available. Check if CDN script is loaded in index.html.");
-      }
       
       console.log('✅ Superpowered SDK loaded successfully from CDN');
 
