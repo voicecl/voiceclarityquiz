@@ -9,11 +9,13 @@
     <script>
       // Verify Superpowered SDK loaded correctly
       window.addEventListener('load', function() {
-        if (window.SuperpoweredGlue) {
-          console.log('✅ Superpowered SDK loaded successfully');
-        } else {
-          console.error('❌ Superpowered SDK failed to load');
-        }
+        setTimeout(() => {
+          if (window.SuperpoweredGlue && window.SuperpoweredGlue.SuperpoweredWebAudio) {
+            console.log('✅ Superpowered SDK loaded successfully');
+          } else {
+            console.error('❌ Superpowered SDK failed to load');
+          }
+        }, 1000); // Give it 1 second to load
       });
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">

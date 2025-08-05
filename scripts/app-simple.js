@@ -906,7 +906,7 @@ class VoiceQuizApp {
         }
         
         this.isProcessing = true;
-        console.log('🔄 processRecording() started for question:', this.currentQuestion);
+        console.log('🔄 processRecording() started for question:', this.currentQuestion + 1);
         
         try {
             this.showProcessingPage();

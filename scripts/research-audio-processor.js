@@ -25,25 +25,19 @@ class ResearchAudioProcessor {
         console.log('✅ AudioContext created with sample rate:', this.audioContext.sampleRate);
       }
 
-      // 2. Get Superpowered from window object (loaded via CDN)
+      // 2. Wait for Superpowered to load with timeout
       console.log('🎵 Loading Superpowered SDK from CDN...');
       
-      if (!window.Superpowered || !window.SuperpoweredGlue) {
-        throw new Error("❌ Superpowered SDK not available. Check if CDN script is loaded in index.html");
-      }
-      
-      const Superpowered = window.Superpowered;
-      const SuperpoweredGlue = window.SuperpoweredGlue;
-      const SuperpoweredWebAudio = SuperpoweredGlue.SuperpoweredWebAudio;
+      const SuperpoweredWebAudio = await this.waitForSuperpowered();
       
       console.log('✅ Superpowered SDK loaded successfully from CDN');
 
       // 3. Initialize Superpowered WASM
       // ✅ Using Superpowered's official public test key for development only
       // ⚠️ Do not replace with a real license in public or testing environments
-      this.superpowered = await SuperpoweredGlue.Instantiate(
+      this.superpowered = await window.SuperpoweredGlue.Instantiate(
         'ExampleLicenseKey-WillExpire-OnNextUpdate',
-        Superpowered
+        window.Superpowered
       );
       console.log('✅ Superpowered WebAssembly initialized');
 
@@ -70,6 +64,27 @@ class ResearchAudioProcessor {
       console.error('❌ Research AudioProcessor initialization failed:', err);
       throw err;
     }
+  }
+
+  // Add this new method to the class
+  async waitForSuperpowered(timeout = 5000) {
+    const start = Date.now();
+    
+    console.log('⏳ Waiting for Superpowered SDK to become available...');
+    
+    while (
+      (!window.SuperpoweredGlue || !window.SuperpoweredGlue.SuperpoweredWebAudio) &&
+      Date.now() - start < timeout
+    ) {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+
+    if (!window.SuperpoweredGlue || !window.SuperpoweredGlue.SuperpoweredWebAudio) {
+      throw new Error('❌ Superpowered SDK failed to load within timeout. Check CDN or internet.');
+    }
+
+    console.log('✅ Superpowered SDK is now available');
+    return window.SuperpoweredGlue.SuperpoweredWebAudio;
   }
 
   handleWorkletMessage(data) {
