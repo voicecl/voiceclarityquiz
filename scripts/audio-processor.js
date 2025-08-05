@@ -45,7 +45,7 @@ class AudioProcessor {
 
             // 5. Create AudioWorklet
             this.workletNode = await this.webaudioManager.createAudioNodeAsync(
-                './scripts/voice-processor-research.js',
+                './scripts/voice-processor-worklet-v272.js',
                 'VoiceProcessor',
                 (message) => this.handleWorkletMessage(message),
                 1, 1
