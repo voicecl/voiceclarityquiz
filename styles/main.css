@@ -157,18 +157,21 @@ html {
 }
 
 .choice-card.selected h3,
-.choice-card.selected p {
-  color: white;
+.choice-card.selected p,
+.choice-card.selected span,
+.choice-card.selected div {
+  color: white !important;
 }
 
 .choice-card.selected .select-button {
   background: rgba(255, 255, 255, 0.2);
-  color: white;
+  color: white !important;
   border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .choice-card.selected .select-button:hover {
   background: rgba(255, 255, 255, 0.3);
+  color: white !important;
 }
 
 .choice-card .checkmark {
@@ -661,18 +664,21 @@ html {
 }
 
 .version-card.selected h3,
-.version-card.selected p {
-    color: white;
+.version-card.selected p,
+.version-card.selected span,
+.version-card.selected div {
+    color: white !important;
 }
 
 .version-card.selected .select-button {
     background: rgba(255, 255, 255, 0.2);
-    color: white;
+    color: white !important;
     border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .version-card.selected .select-button:hover {
     background: rgba(255, 255, 255, 0.3);
+    color: white !important;
 }
 
 /* Play Button States */
@@ -959,8 +965,9 @@ button[data-test*="edit"],
 
 .choice-card.selected {
     border-color: #28a745;
-    background-color: #f8fff9;
+    background: linear-gradient(135deg, #10b981, #059669) !important;
     box-shadow: 0 4px 12px rgba(40, 167, 69, 0.2);
+    color: white !important;
 }
 
 /* Attention check styling */
