@@ -1023,19 +1023,19 @@ button[data-test*="edit"],
 
 /* Fix feedback button text contrast - ensure proper default state */
 .feedback-tag {
-  color: var(--aura-secondary) !important;
+  color: white !important;
 }
 
 .feedback-tag span {
-  color: var(--aura-secondary) !important;
+  color: white !important;
 }
 
 .feedback-tag:hover {
-  color: var(--aura-secondary) !important;
+  color: white !important;
 }
 
 .feedback-tag:hover span {
-  color: var(--aura-secondary) !important;
+  color: white !important;
 }
 
 /* Enhanced selected state for feedback tags */
