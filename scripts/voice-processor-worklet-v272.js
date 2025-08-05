@@ -1,15 +1,21 @@
-// voice-processor-worklet-v272.js
+// voice-processor-worklet-v272.js - FIXED VERSION
 // ✅ CORRECT v2.7.2 AudioWorklet Implementation
 
 // ✅ Import from CDN in AudioWorklet (required pattern)
 import { SuperpoweredWebAudio } from "https://cdn.jsdelivr.net/npm/@superpoweredsdk/web@2.7.2";
 
 class VoiceProcessor extends SuperpoweredWebAudio.AudioWorkletProcessor {
-    constructor() {
-        super();
+    constructor(options) {
+        // ✅ CRITICAL FIX: Pass options properly to parent constructor
+        super(options);
         console.log('🎯 VoiceProcessor AudioWorklet constructor');
         this.isInitialized = false;
         this.processingMode = 'raw';
+        
+        // ✅ DEFENSIVE: Check if options exist
+        if (options && options.processorOptions) {
+            console.log('🔧 AudioWorklet options received:', options.processorOptions);
+        }
     }
 
     onReady() {
