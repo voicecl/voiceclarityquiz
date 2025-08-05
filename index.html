@@ -5,20 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Voice Personalization Listening Quiz</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://superpowered.com/WebAudio/SuperpoweredWebAudio.js?v=1.0.0"></script>
+    <script type="module">
+      // ✅ CORRECT v2.7.2 ES6 Module Import
+      import { SuperpoweredGlue, SuperpoweredWebAudio } from 'https://cdn.jsdelivr.net/npm/@superpoweredsdk/web@2.7.2';
+      
+      // Make available globally for other scripts
+      window.SuperpoweredGlue = SuperpoweredGlue;
+      window.SuperpoweredWebAudio = SuperpoweredWebAudio;
+      
+      console.log('✅ Superpowered v2.7.2 modules imported successfully');
+    </script>
     <script>
-      // Verify Superpowered SDK loaded correctly
+      // Verify Superpowered v2.7.2 SDK loaded correctly
       window.addEventListener('load', function() {
         console.log('✅ Page loaded');
         setTimeout(() => {
-          console.log('⏳ Verifying Superpowered SDK presence...');
+          console.log('⏳ Verifying Superpowered v2.7.2 SDK presence...');
           console.log('🔎 SuperpoweredGlue:', window.SuperpoweredGlue);
-          console.log('🔎 SuperpoweredGlue.SuperpoweredWebAudio:', window?.SuperpoweredGlue?.SuperpoweredWebAudio);
+          console.log('🔎 SuperpoweredWebAudio:', window.SuperpoweredWebAudio);
+          console.log('🔎 Available Superpowered objects:', Object.keys(window).filter(k => k.toLowerCase().includes('super')));
 
-          if (window.SuperpoweredGlue?.SuperpoweredWebAudio) {
-            console.log('✅ Superpowered SDK loaded successfully');
+          if (window.SuperpoweredGlue && window.SuperpoweredWebAudio) {
+            console.log('✅ Superpowered v2.7.2 SDK loaded successfully');
           } else {
-            console.error('❌ Superpowered SDK failed to load');
+            console.error('❌ Superpowered v2.7.2 SDK failed to load');
+            console.log('🔍 Check Network tab for: https://cdn.jsdelivr.net/npm/@superpoweredsdk/web@2.7.2');
           }
         }, 1000); // Give it 1 second to load
       });
