@@ -1,92 +1,79 @@
-// voice-processor-research.js
-// Fallback AudioWorklet for research processing (no Superpowered dependency)
+// voice-processor-research.js - Fixed fallback AudioWorklet
 
 class VoiceProcessor extends AudioWorkletProcessor {
     constructor() {
         super();
         console.log('🎯 VoiceProcessor Research AudioWorklet constructor');
-        this.isInitialized = false;
+        
         this.processingMode = 'raw';
-        this.sampleRate = 44100;
+        this.isInitialized = false;
+        
+        // ✅ CRITICAL FIX: Signal ready immediately since this is the fallback
+        setTimeout(() => {
+            this.isInitialized = true;
+            console.log('✅ VoiceProcessor Research AudioWorklet initialized (fallback mode)');
+            
+            // Signal to main thread that we're ready
+            this.port.postMessage({
+                type: 'initialized',
+                message: 'VoiceProcessor Research AudioWorklet ready (fallback mode)'
+            });
+        }, 10); // Small delay to ensure constructor completes
     }
 
     process(inputs, outputs, parameters) {
+        if (!this.isInitialized) {
+            // Output silence until initialized
+            return true;
+        }
+
         const input = inputs[0];
         const output = outputs[0];
-        
-        if (!input || !output) return true;
 
-        try {
-            // Apply processing based on mode
-            this._applyProcessing(input, output);
-        } catch (error) {
-            console.error('❌ Audio processing error:', error);
-            // Output silence on error
+        // Simple passthrough processing for fallback
+        if (input && input.length > 0 && output && output.length > 0) {
             for (let channel = 0; channel < output.length; channel++) {
-                output[channel].fill(0);
+                const inputChannel = input[channel];
+                const outputChannel = output[channel];
+                
+                if (inputChannel && outputChannel) {
+                    // Apply simple processing based on mode
+                    switch (this.processingMode) {
+                        case 'raw':
+                            // Just copy input to output
+                            outputChannel.set(inputChannel);
+                            break;
+                            
+                        case 'light':
+                            // Simple gain reduction for light processing
+                            for (let i = 0; i < inputChannel.length; i++) {
+                                outputChannel[i] = inputChannel[i] * 0.8;
+                            }
+                            break;
+                            
+                        case 'medium':
+                            // Simple filtering for medium processing
+                            for (let i = 0; i < inputChannel.length; i++) {
+                                outputChannel[i] = inputChannel[i] * 0.6;
+                            }
+                            break;
+                            
+                        case 'deep':
+                            // More processing for deep mode
+                            for (let i = 0; i < inputChannel.length; i++) {
+                                outputChannel[i] = inputChannel[i] * 0.4;
+                            }
+                            break;
+                            
+                        default:
+                            outputChannel.set(inputChannel);
+                            break;
+                    }
+                }
             }
         }
 
-        return true;
-    }
-
-    _applyProcessing(input, output) {
-        const inputChannel = input[0];
-        const outputChannel = output[0];
-        
-        if (!inputChannel || !outputChannel) return;
-
-        // Apply processing based on mode
-        switch (this.processingMode) {
-            case 'raw':
-                // No processing - just copy input to output
-                outputChannel.set(inputChannel);
-                break;
-                
-            case 'light':
-                this._processLight(inputChannel, outputChannel);
-                break;
-                
-            case 'medium':
-                this._processMedium(inputChannel, outputChannel);
-                break;
-                
-            case 'deep':
-                this._processDeep(inputChannel, outputChannel);
-                break;
-                
-            default:
-                // Unknown mode - output silence
-                outputChannel.fill(0);
-                break;
-        }
-    }
-
-    _processLight(input, output) {
-        // Light bone conduction processing - simple EQ
-        for (let i = 0; i < input.length; i++) {
-            // Simple high-pass filter effect
-            const sample = input[i];
-            output[i] = sample * 0.8; // Slight attenuation
-        }
-    }
-
-    _processMedium(input, output) {
-        // Medium bone conduction processing
-        for (let i = 0; i < input.length; i++) {
-            const sample = input[i];
-            // Add some compression-like effect
-            output[i] = Math.tanh(sample * 1.5) * 0.6;
-        }
-    }
-
-    _processDeep(input, output) {
-        // Deep bone conduction processing
-        for (let i = 0; i < input.length; i++) {
-            const sample = input[i];
-            // More aggressive processing
-            output[i] = Math.tanh(sample * 2.0) * 0.4;
-        }
+        return true; // Keep processor alive
     }
 
     onMessageFromMainScope(message) {
@@ -101,7 +88,12 @@ class VoiceProcessor extends AudioWorkletProcessor {
             console.log('🎵 Processing voice with mode:', this.processingMode);
         }
     }
+
+    // Handle messages from main thread
+    static get parameterDescriptors() {
+        return [];
+    }
 }
 
-// Register the processor
+// ✅ Register the processor
 registerProcessor('VoiceProcessor', VoiceProcessor); 

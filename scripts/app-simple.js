@@ -107,9 +107,10 @@ function handleQuestionProcessed(questionIndex, processedMap) {
     return;
   }
   
-  if (window.voiceQuizApp) {
-    window.voiceQuizApp.isHandlingQuestion = true;
-  }
+  try {
+    if (window.voiceQuizApp) {
+      window.voiceQuizApp.isHandlingQuestion = true;
+    }
   
   // Ensure session and questions array exist
   if (!window.voiceQuizApp.session) {
@@ -206,9 +207,18 @@ function handleQuestionProcessed(questionIndex, processedMap) {
     });
   }
   
-  // Reset the handling flag
-  if (window.voiceQuizApp) {
-    window.voiceQuizApp.isHandlingQuestion = false;
+  } catch (error) {
+    console.error('❌ Error in handleQuestionProcessed:', error);
+    // Reset flag even on error
+    if (window.voiceQuizApp) {
+      window.voiceQuizApp.isHandlingQuestion = false;
+    }
+    throw error; // Re-throw to maintain error propagation
+  } finally {
+    // Always reset the handling flag
+    if (window.voiceQuizApp) {
+      window.voiceQuizApp.isHandlingQuestion = false;
+    }
   }
 }
 
@@ -258,7 +268,18 @@ class VoiceQuizApp {
             hasPlayedRight: false
         };
         
+        // ✅ Create shared AudioContext for better performance
+        this.sharedAudioContext = null;
+        
         this.initializeApp();
+    }
+    
+    getAudioContext() {
+        if (!this.sharedAudioContext || this.sharedAudioContext.state === 'closed') {
+            this.sharedAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+            console.log('✅ Created shared AudioContext:', this.sharedAudioContext.sampleRate + 'Hz');
+        }
+        return this.sharedAudioContext;
     }
 
     generateTrials() {
@@ -913,7 +934,8 @@ class VoiceQuizApp {
             
             // Convert blob to AudioBuffer for processing
             const arrayBuffer = await this.currentRecording.arrayBuffer();
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            // ✅ Use shared AudioContext instead of creating new one
+        const audioContext = this.getAudioContext();
             const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
             
             // 🔧 FIXED: Store per-question raw buffer (not session-wide)
@@ -1590,7 +1612,11 @@ class VoiceQuizApp {
                 choice: choice
             });
             
-            if (currentQuestionData.randomizedVersions) {
+            // ✅ Enhanced null checks for version mapping
+            if (currentQuestionData.randomizedVersions && 
+                typeof currentQuestionData.randomizedVersions === 'object' &&
+                currentQuestionData.randomizedVersions[choice]) {
+                
                 const actualVersion = currentQuestionData.randomizedVersions[choice];
                 currentQuestionData.selectedVersion = actualVersion;
                 
@@ -1622,9 +1648,12 @@ class VoiceQuizApp {
                     mapping: currentQuestionData.randomizedVersions
                 });
             } else {
-                console.error('⚠️ No randomizedVersions mapping found for question', this.currentQuestion);
-                console.error('⚠️ This means the version mapping was not properly stored during randomization');
-                currentQuestionData.selectedVersion = choice; // Fallback to left/right
+                console.error('⚠️ Invalid or missing randomizedVersions mapping for question', this.currentQuestion);
+                console.error('⚠️ Mapping data:', currentQuestionData.randomizedVersions);
+                console.error('⚠️ Choice:', choice);
+                
+                // Fallback to choice name
+                currentQuestionData.selectedVersion = choice;
             }
         } else {
             console.error('⚠️ No currentQuestionData found for question', this.currentQuestion);
@@ -3211,6 +3240,11 @@ class VoiceQuizApp {
         
         if (this.currentAudioUrl) {
             issues.push('Current audio URL still exists');
+        }
+        
+        // ✅ Additional cleanup verification
+        if (this.questionData && Object.keys(this.questionData).length > 0) {
+            issues.push(`Question data still exists for ${Object.keys(this.questionData).length} questions`);
         }
         
         if (issues.length > 0) {

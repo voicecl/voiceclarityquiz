@@ -43,13 +43,8 @@ class AudioProcessor {
                 state: this.audioContext.state
             });
 
-            // 5. Create AudioWorklet
-            this.workletNode = await this.webaudioManager.createAudioNodeAsync(
-                './scripts/voice-processor-worklet-v272.js',
-                'VoiceProcessor',
-                (message) => this.handleWorkletMessage(message),
-                1, 1
-            );
+            // 5. Create AudioWorklet with timeout handling
+            await this.createAudioWorkletWithTimeout();
 
             console.log('✅ AudioWorklet created');
             console.log('🎉 AudioProcessor v2.7.2 initialized successfully');
@@ -94,6 +89,79 @@ class AudioProcessor {
             };
             
             poll();
+        });
+    }
+
+    async createAudioWorkletWithTimeout() {
+        console.log('🔧 Creating AudioWorklet with timeout handling...');
+        
+        try {
+            // Try Superpowered AudioWorklet first
+            await this.audioContext.audioWorklet.addModule('./scripts/voice-processor-worklet-v272.js');
+            console.log('✅ Superpowered AudioWorklet module loaded');
+            
+            this.workletNode = new AudioWorkletNode(this.audioContext, 'VoiceProcessor', {
+                numberOfInputs: 1,
+                numberOfOutputs: 1,
+                channelCount: 1
+            });
+            
+        } catch (superpoweredError) {
+            console.warn('⚠️ Superpowered AudioWorklet failed, trying fallback:', superpoweredError.message);
+            
+            try {
+                // Fallback to research AudioWorklet
+                await this.audioContext.audioWorklet.addModule('./scripts/voice-processor-research.js');
+                console.log('✅ Fallback AudioWorklet module loaded');
+                
+                this.workletNode = new AudioWorkletNode(this.audioContext, 'VoiceProcessor', {
+                    numberOfInputs: 1,
+                    numberOfOutputs: 1,
+                    channelCount: 1
+                });
+                
+            } catch (fallbackError) {
+                console.error('❌ Both AudioWorklets failed:', fallbackError.message);
+                throw new Error('AudioWorklet initialization failed');
+            }
+        }
+
+        // ✅ CRITICAL: Wait for AudioWorklet to be ready with timeout
+        await this.waitForAudioWorkletReady();
+        
+        console.log('✅ AudioWorklet created and ready');
+    }
+
+    async waitForAudioWorkletReady(timeout = 5000) {
+        console.log('⏳ Waiting for AudioWorklet to be ready...');
+        
+        return new Promise((resolve, reject) => {
+            let messageReceived = false;
+            
+            // Set up message handler
+            const messageHandler = (event) => {
+                console.log('📨 AudioWorklet message received:', event.data);
+                
+                if (event.data.type === 'initialized') {
+                    messageReceived = true;
+                    console.log('✅ AudioWorklet initialization confirmed');
+                    this.workletNode.port.removeEventListener('message', messageHandler);
+                    resolve();
+                }
+            };
+            
+            // Listen for initialization message
+            this.workletNode.port.addEventListener('message', messageHandler);
+            this.workletNode.port.start();
+            
+            // ✅ CRITICAL FIX: Timeout after 5 seconds regardless
+            setTimeout(() => {
+                if (!messageReceived) {
+                    console.log('⏰ AudioWorklet timeout - proceeding anyway (likely fallback mode)');
+                    this.workletNode.port.removeEventListener('message', messageHandler);
+                    resolve(); // Don't reject - just continue
+                }
+            }, timeout);
         });
     }
 

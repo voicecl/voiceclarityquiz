@@ -214,7 +214,7 @@
             </div>
         </div>
 
-        <!-- Comparison Page: revert to original layout -->
+        <!-- Comparison Page -->
         <div id="comparison-page" class="screen">
             <div class="text-center">
                 <h2 class="text-2xl font-semibold mb-2">Choose Your Preferred Version</h2>
@@ -244,7 +244,6 @@
                         <span id="current-version">No audio playing</span>
                     </div>
                 </div>
-
 
                 <div id="feedback-section" class="opacity-50">
                     <h3 class="text-lg font-semibold mb-4">Why did you choose this version?</h3>
@@ -280,7 +279,7 @@
             </div>
         </div>
 
-        <!-- Results Page: revert to original layout -->
+        <!-- Results Page -->
         <div id="results-page" class="screen">
             <div class="text-center">
                 <div class="text-4xl mb-6">🎉 ✨</div>
@@ -300,14 +299,12 @@
                 </div>
                 <p class="text-aura-secondary mb-6">Your voice profile has been saved successfully</p>
                 <div class="flex gap-4 justify-center">
-                    <!-- 🔧 REMOVED: Download button - users should not be able to download results -->
-                <!-- <button id="download-results-btn" class="btn-secondary">Download Results</button> -->
                     <button id="start-new-quiz-btn" class="btn-primary">Start New Quiz</button>
                 </div>
             </div>
         </div>
 
-        <!-- Thank You Screen (hidden by default) -->
+        <!-- Thank You Screen -->
         <div id="thankyou-screen" class="hidden flex flex-col items-center justify-center py-16">
           <div class="text-6xl mb-4">🎉</div>
           <h2 class="text-3xl font-bold mb-2">Mission complete! 🎉</h2>
@@ -323,8 +320,8 @@
             <p class="text-lg text-gray-300 mb-4">Want to help shape the future of voice tech?</p>
             <div class="consent-section">
               <label class="flex items-start space-x-3 text-left">
-                                 <input type="checkbox" id="wants-updates" name="futureStudies" checked 
-                        class="consent-checkbox mt-1">
+                <input type="checkbox" id="wants-updates" name="futureStudies" checked 
+                       class="consent-checkbox mt-1">
                 <span class="text-sm text-gray-300">
                   Keep me updated on future studies (totally optional)
                 </span>
@@ -341,16 +338,20 @@
         </div>
     </div>
 
-    <!-- Scripts - Load in correct order -->
-    <!-- Superpowered SDK loaded via CDN in head section -->
+    <!-- ✅ FIXED: Scripts - Proper loading order with ES6 modules -->
+    <!-- Load non-module scripts first -->
     <script src="scripts/user-manager.js"></script>
     <script src="scripts/webhook-service.js"></script>
+    <script src="scripts/ui-controller.js"></script>
+    <script src="scripts/device-aware.js"></script>
+    <script src="scripts/audio-format-fix.js"></script>
+    
+    <!-- ✅ Load ES6 modules after dependencies are ready -->
     <script type="module" src="scripts/audio-recorder.js"></script>
     <script type="module" src="scripts/audio-processor.js"></script>
     <script type="module" src="scripts/research-audio-processor.js"></script>
-    <script src="scripts/ui-controller.js"></script>
-    <script src="scripts/device-aware.js"></script>
-    <script defer src="scripts/app-simple.js"></script>
-    <script src="scripts/audio-format-fix.js"></script>
+    
+    <!-- ✅ Load main app last as ES6 module to ensure all dependencies are ready -->
+    <script type="module" src="scripts/app-simple.js"></script>
 </body>
 </html>
