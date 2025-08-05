@@ -1038,6 +1038,7 @@ button[data-test*="edit"],
   color: var(--aura-secondary) !important;
 }
 
+/* Enhanced selected state for feedback tags */
 .feedback-tag.selected {
   background: var(--primary-blue);
   border-color: var(--primary-blue);
@@ -1045,6 +1046,16 @@ button[data-test*="edit"],
 }
 
 .feedback-tag.selected span {
+  color: white !important;
+}
+
+.feedback-tag.selected:hover {
+  background: var(--primary-blue);
+  border-color: var(--primary-blue);
+  color: white !important;
+}
+
+.feedback-tag.selected:hover span {
   color: white !important;
 }
 
