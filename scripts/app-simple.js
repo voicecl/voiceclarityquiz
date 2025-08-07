@@ -599,33 +599,29 @@ class VoiceQuizApp {
             // Show loading state
             submitBtn.classList.add('loading');
             submitBtn.disabled = true;
-            submitBtn.textContent = 'Registering...';
+            submitBtn.textContent = 'Starting...';
 
-            // Get form data
+            // Get consent only
             const formData = new FormData(event.target);
-            const userData = {
-                firstName: formData.get('firstName'),
-                lastName: formData.get('lastName'),
-                email: formData.get('email'),
-                consent: formData.get('consent') === 'on'
-            };
+            const hasConsent = formData.get('consent') === 'on';
+            
+            if (!hasConsent) {
+                throw new Error('Please consent to participate in the study.');
+            }
 
-            // Register user
+            // Generate anonymous session ID
+            const sessionId = 'anon_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+            
+            // Initialize anonymous session
             if (!window.userManager) {
                 throw new Error('User manager not initialized. Please refresh the page and try again.');
             }
-            const result = await window.userManager.registerUser(userData);
+            const result = await window.userManager.initAnonymousSession(sessionId);
 
             if (result.success) {
                 this.isRegistered = true;
-                console.log('User registered successfully');
+                console.log('Anonymous session started');
                 this.startQuiz();
-            } else if (result.blocked) {
-                // Show already participated message
-                const registrationForm = document.getElementById('registration-form');
-                const alreadyParticipated = document.getElementById('already-participated');
-                if (registrationForm) registrationForm.style.display = 'none';
-                if (alreadyParticipated) alreadyParticipated.classList.remove('hidden');
             } else {
                 throw new Error(result.message || 'Registration failed');
             }

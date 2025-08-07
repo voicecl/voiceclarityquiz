@@ -110,6 +110,45 @@ class UserManager {
         }
     }
 
+    async initAnonymousSession(sessionId) {
+        try {
+            const deviceInfo = this.detectDevice();
+            
+            this.currentUser = {
+                id: sessionId,
+                firstName: 'Anonymous',
+                lastName: 'User',
+                email: 'anonymous@study.com',
+                consent: true,
+                registrationDate: new Date().toISOString(),
+                deviceInfo: deviceInfo,
+                studyProgress: {
+                    currentQuestion: 1,
+                    totalQuestions: 10,
+                    responses: [],
+                    startTime: new Date().toISOString(),
+                    completed: false
+                }
+            };
+
+            this.saveUserData();
+            
+            console.log('Anonymous session started:', this.currentUser);
+            return {
+                success: true,
+                user: this.currentUser
+            };
+            
+        } catch (error) {
+            console.error('Anonymous session initialization failed:', error);
+            return {
+                success: false,
+                blocked: false,
+                message: error.message || 'Session initialization failed'
+            };
+        }
+    }
+
     initializeVersionOrder() {
         // For counter-balanced trials, we use a fixed mapping
         // This ensures consistent version assignment across all trials

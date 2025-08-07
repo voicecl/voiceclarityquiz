@@ -271,32 +271,13 @@
             </div>
         </div>
 
-        <!-- Registration & Privacy Consent Page -->
+        <!-- Simple Consent Page -->
         <div id="registration-page" class="screen">
             <div class="text-center max-w-md mx-auto">
                 <div class="text-3xl mb-4">📋</div>
                 <h2 class="text-2xl font-bold mb-2">Voice Research Study</h2>
                 <p class="text-aura-secondary mb-4">Help us improve voice technology for everyone</p>
                 <p class="text-sm text-aura-secondary mb-6 italic">This study takes about 10 minutes to complete</p>
-                
-                <!-- Privacy Notice -->
-                <div class="privacy-notice text-left mb-6">
-                    <h3 class="text-lg font-semibold mb-3">What we collect:</h3>
-                    <ul class="text-sm text-aura-secondary space-y-1 mb-4">
-                        <li>• Your name and email (for tracking participation and optional updates)</li>
-                        <li>• Short voice recordings (automatically deleted after processing)</li>
-                        <li>• Your preferences between different audio versions</li>
-                        <li>• Device information (mobile vs desktop)</li>
-                    </ul>
-                    
-                    <h3 class="text-lg font-semibold mb-3">Data protection:</h3>
-                    <ul class="text-sm text-aura-secondary space-y-1 mb-4">
-                        <li>• Voice recordings are deleted within 1 hour of completion</li>
-                        <li>• Only anonymized preference data is stored long-term</li>
-                        <li>• No personal voice data is shared with third parties</li>
-                        <li>• You can request data deletion anytime</li>
-                    </ul>
-                </div>
 
                 <!-- Voice Setup Instructions -->
                 <div class="w-full max-w-2xl mx-auto mb-6 px-4 py-4 bg-gray-50 border border-gray-200 rounded-lg shadow-sm">
@@ -324,49 +305,24 @@
                   </div>
                 </div>
 
-                <!-- Registration Form -->
+                <!-- Simple Consent Form -->
                 <form id="registration-form" class="space-y-4">
-                                         <div>
-                         <input type="text" id="firstName" name="firstName" required 
-                                class="form-input" placeholder="First Name" autocomplete="given-name">
-                     </div>
-                     <div>
-                         <input type="text" id="lastName" name="lastName" required 
-                                class="form-input" placeholder="Last Name" autocomplete="family-name">
-                     </div>
-                     <div>
-                         <input type="email" id="email" name="email" required 
-                                class="form-input" placeholder="Email Address" autocomplete="email">
-                     </div>
-                    
-                                         <!-- Consent Checkbox -->
-                     <div class="consent-section">
-                         <label for="consent" class="flex items-start space-x-3 text-left cursor-pointer">
-                             <input type="checkbox" id="consent" name="consent" required 
-                                    class="consent-checkbox mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                             <span class="text-sm text-aura-secondary">
-                                 I consent to participate in this voice research study. I understand my voice recordings will be processed for research purposes and then automatically deleted within 1 hour.
-                             </span>
-                         </label>
-                     </div>
+                    <!-- Consent Checkbox -->
+                    <div class="consent-section">
+                        <label for="consent" class="flex items-start space-x-3 text-left">
+                            <input type="checkbox" id="consent" name="consent" required 
+                                   class="consent-checkbox mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                            <span class="text-sm text-aura-secondary">
+                                I consent to participate in this anonymous voice study. My responses will be used for research purposes only.
+                            </span>
+                        </label>
+                    </div>
 
-                                         <!-- Submit Button -->
-                     <button type="submit" id="register-btn" class="btn-primary w-full mt-6 mb-6">
-                         Begin Voice Study
-                     </button>
+                    <!-- Start Button -->
+                    <button type="submit" id="register-btn" class="btn-primary w-full mt-6 mb-6">
+                        Start Voice Quiz
+                    </button>
                 </form>
-
-                <!-- Already Participated Message -->
-                <div id="already-participated" class="hidden">
-                    <div class="text-4xl mb-4">✅</div>
-                    <h3 class="text-xl font-semibold mb-4">Thank you!</h3>
-                    <p class="text-aura-secondary mb-4">
-                        You've already completed this study. Thank you for your participation!
-                    </p>
-                    <p class="text-sm text-aura-secondary">
-                        If you believe this is an error, please contact our research team.
-                    </p>
-                </div>
             </div>
         </div>
 
@@ -546,20 +502,6 @@
           <p class="text-lg text-gray-300 mb-6">
             Every ear is different - that's what makes this so valuable!
           </p>
-          
-                     <!-- Future Studies Checkbox -->
-           <div class="max-w-md mx-auto mb-6">
-             <p class="text-lg text-gray-300 mb-4">Want to help shape the future of voice tech?</p>
-             <div class="consent-section">
-               <label for="wants-updates" class="flex items-start space-x-3 text-left cursor-pointer">
-                 <input type="checkbox" id="wants-updates" name="futureStudies" checked 
-                        class="consent-checkbox mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                 <span class="text-sm text-gray-300">
-                   Keep me updated on future studies (totally optional)
-                 </span>
-               </label>
-             </div>
-           </div>
           
           <p class="text-sm text-white mb-2">
             Your voice recordings have been automatically deleted for your privacy protection.

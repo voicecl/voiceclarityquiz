@@ -47,7 +47,7 @@ class WebhookService {
     }
 
     validateSessionData(sessionData) {
-        const required = ['sessionId', 'userEmail', 'firstName', 'lastName', 'responses'];
+        const required = ['sessionId', 'responses'];
         
         for (const field of required) {
             if (!sessionData[field]) {
@@ -95,9 +95,6 @@ class WebhookService {
         return {
             // Session metadata
             sessionId: sessionData.sessionId,
-            userEmail: sessionData.userEmail,
-            firstName: sessionData.firstName,
-            lastName: sessionData.lastName,
             startTime: startTime.toISOString(),
             completedAt: completedAt.toISOString(),
             totalDuration: Math.round(totalDuration),
