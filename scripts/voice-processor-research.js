@@ -10,11 +10,11 @@ class VoiceProcessor extends AudioWorkletProcessor {
         
         // ✅ CRITICAL FIX: Signal ready immediately since this is the fallback
         setTimeout(() => {
-            this.isInitialized = true;
+                this.isInitialized = true;
             console.log('✅ VoiceProcessor Research AudioWorklet initialized (fallback mode)');
             
             // Signal to main thread that we're ready
-            this.port.postMessage({
+        this.port.postMessage({
                 type: 'initialized',
                 message: 'VoiceProcessor Research AudioWorklet ready (fallback mode)'
             });

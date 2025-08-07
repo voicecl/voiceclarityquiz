@@ -2191,9 +2191,41 @@ class VoiceQuizApp {
     displayResults(analytics) {
         // Hide all other screens/containers
         this.hideAllScreens();
+        
+        // ✅ Add voice preference analysis
+        const result = this.getVoicePreferenceSummary();
+        const resultDiv = document.getElementById('voice-preference-summary');
+        if (resultDiv) resultDiv.innerText = result.message;
+        
         // Show the thank-you card
         const thankyou = document.getElementById('thankyou-screen');
         if (thankyou) thankyou.classList.remove('hidden');
+    }
+
+    getVoicePreferenceSummary() {
+        const questions = window.voiceQuizApp.session.questions || [];
+
+        // ✅ Only count the 9 real trials (exclude the guaranteed raw catch trial)
+        const realQuestions = questions.filter(q => !q.isCatch && q.selectedVersion);
+
+        let rawCount = 0;
+        for (const q of realQuestions) {
+            if (q.selectedVersion === 'raw') rawCount++;
+        }
+
+        const modifiedCount = realQuestions.length - rawCount;
+        const preference = rawCount >= 5 ? "raw" : "enhanced"; // 5+ out of 9 = raw preference
+
+        const message = preference === "raw"
+            ? "You chose your regular recorded voice more often. That suggests you're more comfortable with how your voice naturally sounds in recordings — which is uncommon, and really valuable insight for us."
+            : "You chose enhanced versions of your voice more often. That means you may prefer how your voice feels on the inside — closer to how you naturally hear yourself in your head.";
+
+        return {
+            rawCount,
+            modifiedCount,
+            preference,
+            message
+        };
     }
 
     getVersionLabel(versionType) {
@@ -3458,4 +3490,171 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('  - window.debugAllTrialMappings() - Show all trial breakdowns');
     console.log('  - window.verifyTrialLogic() - Verify trial logic compliance');
 });
+
+// 🔒 BULLETPROOF SECURITY FOR app-simple.js
+// Add this code at the VERY END of app-simple.js (after all other code)
+
+(function() {
+    'use strict';
+    
+    if (window.PRODUCTION_MODE) {
+        console.log('🔒 Securing app-simple.js for blind testing');
+        
+        // 🔒 SECURITY LEVEL 1: Remove Debug Functions Completely
+        const debugFunctions = [
+            'debugVersionMapping',
+            'debugAllTrialMappings', 
+            'verifyTrialLogic',
+            'debugQuizState',
+            'debugProcessing',
+            'debugTrials'
+        ];
+        
+        debugFunctions.forEach(funcName => {
+            delete window[funcName];
+            window[funcName] = undefined;
+            
+            // Also remove from any potential parent objects
+            if (window.voiceQuizApp && window.voiceQuizApp[funcName]) {
+                delete window.voiceQuizApp[funcName];
+                window.voiceQuizApp[funcName] = undefined;
+            }
+        });
+        
+        // 🔒 SECURITY LEVEL 2: Obfuscate VoiceQuizApp Properties
+        if (window.voiceQuizApp) {
+            // Hide sensitive properties with getters that return generic info
+            const sensitiveProps = [
+                'questionData',
+                'trialOrder', 
+                'randomizedVersions',
+                'processingParameters',
+                'currentTrial',
+                'trialMappings'
+            ];
+            
+            sensitiveProps.forEach(prop => {
+                if (window.voiceQuizApp.hasOwnProperty(prop)) {
+                    Object.defineProperty(window.voiceQuizApp, prop, {
+                        get: () => '[Secured for blind testing]',
+                        set: () => false,
+                        enumerable: false,
+                        configurable: false
+                    });
+                }
+            });
+            
+            // 🔒 SECURITY LEVEL 3: Override Methods That Reveal Data
+            const originalMethods = {};
+            const methodsToSecure = [
+                'getCurrentTrialInfo',
+                'getVersionMapping',
+                'getProcessingMode',
+                'debugVersionMapping',
+                'debugAllTrialMappings'
+            ];
+            
+            methodsToSecure.forEach(method => {
+                if (typeof window.voiceQuizApp[method] === 'function') {
+                    originalMethods[method] = window.voiceQuizApp[method];
+                    window.voiceQuizApp[method] = function() {
+                        // Return generic/safe information only
+                        if (method.includes('debug')) {
+                            return '[Debug functions disabled for blind testing]';
+                        }
+                        if (method.includes('Version') || method.includes('Mode')) {
+                            return { version: 'A', mode: 'active' };
+                        }
+                        if (method.includes('Trial')) {
+                            return { question: 'Active', type: 'comparison' };
+                        }
+                        return '[Secured]';
+                    };
+                }
+            });
+            
+            // Store original methods internally for app functionality (if needed)
+            window.voiceQuizApp._securedMethods = originalMethods;
+        }
+        
+        // 🔒 SECURITY LEVEL 4: Clean Global Namespace
+        const globalKeysToHide = [
+            'processingModes',
+            'trialData',
+            'questionMappings', 
+            'versionOrder',
+            'debugConfig',
+            'testConfig'
+        ];
+        
+        globalKeysToHide.forEach(key => {
+            if (window.hasOwnProperty(key)) {
+                delete window[key];
+                window[key] = undefined;
+            }
+        });
+        
+        // 🔒 SECURITY LEVEL 5: Secure Console Output for App-Specific Messages
+        const originalConsole = window._originalConsole || console;
+        
+        // Override app-specific logging to be extra safe
+        const secureAppLog = (level, message, ...args) => {
+            if (typeof message === 'string') {
+                // Filter out any remaining sensitive information specific to app-simple.js
+                const filteredMessage = message
+                    .replace(/question\s+\d+.*version.*\w+/gi, 'question X: processing active')
+                    .replace(/left.*light|right.*raw|left.*raw|right.*light/gi, 'left: A, right: B')
+                    .replace(/selected.*version.*\w+/gi, 'selection recorded')
+                    .replace(/processing.*mode.*\w+/gi, 'processing active')
+                    .replace(/trial.*type.*\w+/gi, 'trial active')
+                    .replace(/actual.*version.*\w+/gi, 'version recorded')
+                    .replace(/randomized.*versions/gi, 'versions prepared')
+                    .replace(/counter.*balanced/gi, 'study protocol active');
+                
+                // Only show if it's a safe, generic message
+                if (filteredMessage.includes('active') || 
+                    filteredMessage.includes('ready') || 
+                    filteredMessage.includes('complete') ||
+                    filteredMessage.includes('initialized') ||
+                    filteredMessage.includes('success')) {
+                    originalConsole[level](filteredMessage, ...args);
+                }
+            }
+        };
+        
+        // 🔒 SECURITY LEVEL 6: Override JSON.stringify for Objects
+        const originalStringify = JSON.stringify;
+        JSON.stringify = function(value, replacer, space) {
+            if (value && typeof value === 'object') {
+                // If object contains sensitive quiz data, obfuscate it
+                if (value.hasOwnProperty('actualVersion') || 
+                    value.hasOwnProperty('trialType') ||
+                    value.hasOwnProperty('selectedVersion') ||
+                    value.hasOwnProperty('randomizedVersions')) {
+                    
+                    const obfuscated = { ...value };
+                    if (obfuscated.actualVersion) obfuscated.actualVersion = 'version_' + btoa(obfuscated.actualVersion).slice(0,4);
+                    if (obfuscated.trialType) obfuscated.trialType = 'type_' + btoa(obfuscated.trialType).slice(0,4);
+                    if (obfuscated.selectedVersion) obfuscated.selectedVersion = 'selected_' + btoa(obfuscated.selectedVersion).slice(0,4);
+                    if (obfuscated.randomizedVersions) obfuscated.randomizedVersions = '[Secured]';
+                    
+                    return originalStringify.call(this, obfuscated, replacer, space);
+                }
+            }
+            return originalStringify.call(this, value, replacer, space);
+        };
+        
+        // 🔒 SECURITY LEVEL 7: Final Lockdown Message
+        console.log('🔒 app-simple.js secured for blind testing');
+        console.log('🔒 All debug functions and sensitive data access disabled');
+        
+    } else {
+        // 🔧 DEVELOPMENT MODE: Enable all debug functions
+        console.log('🔧 Development mode - app-simple.js debug functions available');
+        console.log('💡 Available debug functions:');
+        console.log('  - window.debugVersionMapping() - Check current version mapping');
+        console.log('  - window.debugAllTrialMappings() - Show all trial breakdowns');
+        console.log('  - window.verifyTrialLogic() - Verify trial logic compliance');
+    }
+})();
 

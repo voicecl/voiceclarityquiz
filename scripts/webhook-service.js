@@ -89,6 +89,9 @@ class WebhookService {
         // 🔧 ENHANCED: Debug webhook payload
         this.debugWebhookPayload(sessionData, responses);
 
+        // ✅ Add voice preference summary
+        const summary = this.getVoicePreferenceSummary(sessionData.responses);
+
         return {
             // Session metadata
             sessionId: sessionData.sessionId,
@@ -105,7 +108,13 @@ class WebhookService {
             responses: responses,
 
             // Preference analysis summary
-            preferenceAnalysis: preferenceAnalysis
+            preferenceAnalysis: preferenceAnalysis,
+
+            // Voice preference summary
+            raw_count: summary.rawCount,
+            modified_count: summary.modifiedCount,
+            voice_preference: summary.preference,
+            readable_message: summary.message
         };
     }
 
@@ -156,6 +165,30 @@ class WebhookService {
     // Method to clear sent sessions (useful for testing)
     clearSentSessions() {
         this.sentSessions.clear();
+    }
+
+    getVoicePreferenceSummary(responses) {
+        // ✅ Only count the 9 real trials (exclude the guaranteed raw catch trial)
+        const realQuestions = responses.filter(r => !r.isCatch && r.selectedVersion);
+
+        let rawCount = 0;
+        for (const q of realQuestions) {
+            if (q.selectedVersion === 'raw') rawCount++;
+        }
+
+        const modifiedCount = realQuestions.length - rawCount;
+        const preference = rawCount >= 5 ? "raw" : "enhanced"; // 5+ out of 9 = raw preference
+
+        const message = preference === "raw"
+            ? "You chose your regular recorded voice more often. That suggests you're more comfortable with how your voice naturally sounds in recordings — which is uncommon, and really valuable insight for us."
+            : "You chose enhanced versions of your voice more often. That means you may prefer how your voice feels on the inside — closer to how you naturally hear yourself in your head.";
+
+        return {
+            rawCount,
+            modifiedCount,
+            preference,
+            message
+        };
     }
     
     // 🔧 ENHANCED: Debug webhook payload

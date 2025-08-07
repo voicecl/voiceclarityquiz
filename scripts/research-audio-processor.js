@@ -4,18 +4,18 @@
  */
 
 class ResearchAudioProcessor {
-    constructor() {
-        this.audioContext = null;
+  constructor() {
+    this.audioContext = null;
         this.superpowered = null;
-        this.webaudioManager = null;
-        this.isInitialized = false;
+    this.webaudioManager = null;
+    this.isInitialized = false;
         this.processingMode = 'raw';
         this.audioWorkletNode = null;
         
         console.log('🎯 ResearchAudioProcessor v2.7.2 created');
-    }
+  }
 
-    async initialize() {
+  async initialize() {
         try {
             console.log('🚀 Starting ResearchAudioProcessor v2.7.2 initialization...');
             
@@ -25,8 +25,8 @@ class ResearchAudioProcessor {
             // 2. Initialize Superpowered WASM
             console.log('🔧 Instantiating Superpowered WebAssembly...');
             this.superpowered = await window.SuperpoweredGlue.Instantiate(
-                'ExampleLicenseKey-WillExpire-OnNextUpdate'
-            );
+          'ExampleLicenseKey-WillExpire-OnNextUpdate'
+        );
             console.log('✅ Superpowered WebAssembly instantiated:', this.superpowered);
 
             // 3. Create WebAudio manager
@@ -67,8 +67,8 @@ class ResearchAudioProcessor {
                 numberOfOutputs: 1,
                 channelCount: 1
             });
-            
-        } catch (superpoweredError) {
+
+      } catch (superpoweredError) {
             console.warn('⚠️ Superpowered AudioWorklet failed, trying fallback:', superpoweredError.message);
             
             try {
@@ -144,24 +144,24 @@ class ResearchAudioProcessor {
                 } else if (elapsed >= timeout) {
                     const error = new Error(`Superpowered v2.7.2 SDK not available after ${timeout}ms`);
                     reject(error);
-                } else {
+      } else {
                     setTimeout(poll, pollInterval);
-                }
+      }
             };
             
             poll();
         });
-    }
+  }
 
-    async processRecording(audioBuffer) {
-        if (!this.isInitialized) await this.initialize();
+  async processRecording(audioBuffer) {
+    if (!this.isInitialized) await this.initialize();
 
-        console.log('🔬 Processing audio with research-grade parameters...');
-        console.log('Parameters:');
-        console.log('🔹 LIGHT: -60 cents, formant 0.9, 300-1200Hz, shelf EQ');
-        console.log('🔸 MEDIUM: -120 cents, formant 0.85, 250-1400Hz, shelf EQ');
-        console.log('🔴 DEEP: -160 cents, formant 0.75, 180-1600Hz, shelf EQ');
-        
+    console.log('🔬 Processing audio with research-grade parameters...');
+    console.log('Parameters:');
+    console.log('🔹 LIGHT: -60 cents, formant 0.9, 300-1200Hz, shelf EQ');
+    console.log('🔸 MEDIUM: -120 cents, formant 0.85, 250-1400Hz, shelf EQ');
+    console.log('🔴 DEEP: -160 cents, formant 0.75, 180-1600Hz, shelf EQ');
+    
         try {
             // ✅ CRITICAL FIX: Create fallback processing when AudioWorklet fails
             const processedVersions = {
@@ -342,13 +342,13 @@ class ResearchAudioProcessor {
         if (this.audioWorkletNode) {
             try {
                 this.audioWorkletNode.disconnect();
-            } catch (e) {
+      } catch (e) {
                 console.warn('AudioWorklet cleanup warning:', e);
-            }
+      }
             this.audioWorkletNode = null;
-        }
-        
-        // Cleanup WebAudio manager
+    }
+    
+    // Cleanup WebAudio manager
         if (this.webaudioManager) {
             try {
                 // ✅ CORRECT v2.7.2: Properly destroy WebAudio manager
@@ -358,14 +358,14 @@ class ResearchAudioProcessor {
             } catch (error) {
                 console.warn('⚠️ Error destroying webaudioManager:', error);
             }
-            this.webaudioManager = null;
+    this.webaudioManager = null;
         }
-        
-        // Cleanup Superpowered
-        if (this.superpowered) {
-            this.superpowered.destruct();
-            this.superpowered = null;
-        }
+    
+    // Cleanup Superpowered
+    if (this.superpowered) {
+      this.superpowered.destruct();
+      this.superpowered = null;
+    }
         
         // Cleanup AudioContext
         if (this.audioContext && this.audioContext.state !== 'closed') {
@@ -376,10 +376,10 @@ class ResearchAudioProcessor {
             }
             this.audioContext = null;
         }
-        
-        this.isInitialized = false;
-        console.log('✅ Research AudioProcessor cleanup completed');
-    }
+    
+    this.isInitialized = false;
+    console.log('✅ Research AudioProcessor cleanup completed');
+  }
 
     // Diagnostic methods for debugging
     getStatus() {

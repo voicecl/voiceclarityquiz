@@ -4,21 +4,21 @@
  */
 
 class AudioProcessor {
-    constructor() {
-        this.audioContext = null;
+  constructor() {
+    this.audioContext = null;
         this.superpowered = null;
-        this.webaudioManager = null;
-        this.workletNode = null;
-        this.isInitialized = false;
-        this.pendingRequests = new Map();
+    this.webaudioManager = null;
+    this.workletNode = null;
+    this.isInitialized = false;
+    this.pendingRequests = new Map();
         
         console.log('🎯 AudioProcessor v2.7.2 created');
-    }
+  }
 
-    async initialize() {
-        if (this.isInitialized) return;
+  async initialize() {
+    if (this.isInitialized) return;
 
-        try {
+    try {
             console.log('🚀 Starting AudioProcessor v2.7.2 initialization...');
             
             // 1. Wait for Superpowered to be globally available
@@ -163,29 +163,29 @@ class AudioProcessor {
                 }
             }, timeout);
         });
-    }
+  }
 
-    handleWorkletMessage(data) {
-        console.log('📨 Worklet message received:', data);
-        
-        if (data.type === 'ready') {
-            console.log('🎵 VoiceProcessor worklet ready:', data.message);
-        } else if (data.type === 'error') {
-            console.error('❌ VoiceProcessor error:', data.error);
-        } else if (data.requestId && this.pendingRequests.has(data.requestId)) {
-            const { resolve, reject } = this.pendingRequests.get(data.requestId);
-            this.pendingRequests.delete(data.requestId);
-            
-            if (data.error) {
-                reject(new Error(data.error));
-            } else {
-                resolve(data.versions);
-            }
-        }
+  handleWorkletMessage(data) {
+    console.log('📨 Worklet message received:', data);
+    
+    if (data.type === 'ready') {
+      console.log('🎵 VoiceProcessor worklet ready:', data.message);
+    } else if (data.type === 'error') {
+      console.error('❌ VoiceProcessor error:', data.error);
+    } else if (data.requestId && this.pendingRequests.has(data.requestId)) {
+      const { resolve, reject } = this.pendingRequests.get(data.requestId);
+      this.pendingRequests.delete(data.requestId);
+      
+      if (data.error) {
+        reject(new Error(data.error));
+      } else {
+        resolve(data.versions);
+      }
     }
+  }
 
-    async processRecording(audioBuffer) {
-        if (!this.isInitialized) await this.initialize();
+  async processRecording(audioBuffer) {
+    if (!this.isInitialized) await this.initialize();
 
         console.log('🎵 Processing audio with Superpowered AudioWorklet');
         
@@ -325,29 +325,29 @@ class AudioProcessor {
         }
         
         return support;
-    }
+  }
 
-    cleanup() {
-        console.log('🧹 Cleaning up AudioProcessor...');
-        
-        // Clear pending requests
-        this.pendingRequests.clear();
-        
+  cleanup() {
+    console.log('🧹 Cleaning up AudioProcessor...');
+    
+    // Clear pending requests
+    this.pendingRequests.clear();
+    
         // Cleanup worklet
-        if (this.workletNode) {
-            try {
-                this.workletNode.sendMessageToAudioScope({ command: 'cleanup' });
-                if (this.workletNode.destruct) {
+    if (this.workletNode) {
+      try {
+        this.workletNode.sendMessageToAudioScope({ command: 'cleanup' });
+        if (this.workletNode.destruct) {
                     this.workletNode.destruct();
-                }
-                this.workletNode.disconnect();
-            } catch (e) {
-                console.warn('Worklet cleanup warning:', e);
-            }
-            this.workletNode = null;
         }
-        
-        // Cleanup WebAudio manager
+        this.workletNode.disconnect();
+      } catch (e) {
+        console.warn('Worklet cleanup warning:', e);
+      }
+      this.workletNode = null;
+    }
+    
+    // Cleanup WebAudio manager
         if (this.webaudioManager) {
             try {
                 // ✅ CORRECT v2.7.2: Properly destroy WebAudio manager
@@ -357,15 +357,15 @@ class AudioProcessor {
             } catch (error) {
                 console.warn('⚠️ Error destroying webaudioManager:', error);
             }
-            this.webaudioManager = null;
+    this.webaudioManager = null;
         }
-        
-        // Cleanup Superpowered
-        if (this.superpowered) {
-            this.superpowered.destruct();
-            this.superpowered = null;
-        }
-        
+    
+    // Cleanup Superpowered
+    if (this.superpowered) {
+      this.superpowered.destruct();
+      this.superpowered = null;
+    }
+    
         // Cleanup AudioContext
         if (this.audioContext && this.audioContext.state !== 'closed') {
             try {
@@ -375,8 +375,8 @@ class AudioProcessor {
             }
             this.audioContext = null;
         }
-        
-        this.isInitialized = false;
+    
+    this.isInitialized = false;
         console.log('✅ AudioProcessor cleanup completed');
     }
 

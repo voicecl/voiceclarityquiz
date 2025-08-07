@@ -4,6 +4,208 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Voice Personalization Listening Quiz</title>
+    <script>
+    (function() {
+        'use strict';
+        
+        // 🔒 SECURITY LEVEL 1: Environment Detection
+        const isProduction = (
+            window.location.hostname.includes('github.io') ||
+            window.location.hostname.includes('voicecl.github.io') ||
+            (window.location.hostname !== 'localhost' && 
+             window.location.hostname !== '127.0.0.1' &&
+             !window.location.hostname.includes('local'))
+        );
+        
+        window.PRODUCTION_MODE = isProduction;
+        
+        if (!isProduction) {
+            console.log('🔧 Development mode - full debugging available');
+            return; // Exit early in development
+        }
+        
+        console.log('🔒 Secure mode active');
+        
+        // 🔒 SECURITY LEVEL 2: Complete Console Lockdown
+        const secureConsole = () => {
+            const methods = ['log', 'warn', 'error', 'info', 'debug', 'trace', 'dir', 'table'];
+            const originalMethods = {};
+            
+            methods.forEach(method => {
+                originalMethods[method] = console[method];
+                console[method] = (...args) => {
+                    // Show only safe, generic messages
+                    const safeArgs = args.map(arg => {
+                        if (typeof arg === 'string') {
+                            // Remove ALL potentially sensitive information
+                            return arg
+                                .replace(/\-?\d+\.?\d*\s*(cents|hz|khz)/gi, 'X units')
+                                .replace(/formant\s+\d+\.?\d*/gi, 'formant X.X')
+                                .replace(/\d+\-\d+(hz|khz)/gi, 'X-X Hz')
+                                .replace(/(light|medium|deep|raw)/gi, 'mode')
+                                .replace(/left\s*version|right\s*version/gi, 'version')
+                                .replace(/🔹.*|🔸.*|🔴.*/gi, '🔊 Processing configured')
+                                .replace(/version\s*(a|b|left|right):\s*\w+/gi, 'version: X')
+                                .replace(/processing\s*(mode|type):\s*\w+/gi, 'processing: active')
+                                .replace(/actualversion|selectedversion|trialtype/gi, 'data')
+                                .replace(/superpowered.*initialization/gi, 'audio system ready');
+                        }
+                        return arg;
+                    });
+                    
+                    // Only show truly safe messages
+                    if (safeArgs.some(arg => 
+                        typeof arg === 'string' && 
+                        (arg.includes('ready') || 
+                         arg.includes('initialized') || 
+                         arg.includes('complete') ||
+                         arg.includes('Processing configured') ||
+                         arg.includes('audio system'))
+                    )) {
+                        originalMethods[method].apply(console, safeArgs);
+                    }
+                };
+            });
+            
+            // Store originals for internal use if needed
+            window._originalConsole = originalMethods;
+        };
+        
+        // 🔒 SECURITY LEVEL 3: Disable Developer Tools Detection
+        const blockDevTools = () => {
+            // Detect dev tools opening
+            let devtools = {
+                open: false,
+                orientation: null
+            };
+            
+            setInterval(() => {
+                if (window.outerHeight - window.innerHeight > 200 || 
+                    window.outerWidth - window.innerWidth > 200) {
+                    if (!devtools.open) {
+                        devtools.open = true;
+                        // Clear potentially sensitive data from console
+                        console.clear();
+                        console.log('🔒 Study in progress');
+                    }
+                } else {
+                    devtools.open = false;
+                }
+            }, 500);
+        };
+        
+        // 🔒 SECURITY LEVEL 4: Obfuscate Global Variables
+        const secureGlobals = () => {
+            // Override Object.keys, Object.getOwnPropertyNames for window
+            const originalKeys = Object.keys;
+            const originalProps = Object.getOwnPropertyNames;
+            
+            Object.keys = function(obj) {
+                if (obj === window) {
+                    // Hide sensitive global variables
+                    return originalKeys(obj).filter(key => 
+                        !key.includes('quiz') &&
+                        !key.includes('voice') &&
+                        !key.includes('trial') &&
+                        !key.includes('debug') &&
+                        !key.includes('processing')
+                    );
+                }
+                return originalKeys(obj);
+            };
+            
+            Object.getOwnPropertyNames = function(obj) {
+                if (obj === window) {
+                    return originalProps(obj).filter(key => 
+                        !key.includes('quiz') &&
+                        !key.includes('voice') &&
+                        !key.includes('trial') &&
+                        !key.includes('debug') &&
+                        !key.includes('processing')
+                    );
+                }
+                return originalProps(obj);
+            };
+        };
+        
+        // 🔒 SECURITY LEVEL 5: Network Request Obfuscation
+        const secureNetwork = () => {
+            // Override fetch to obfuscate sensitive data in network tab
+            const originalFetch = window.fetch;
+            window.fetch = function(url, options = {}) {
+                if (options.body && typeof options.body === 'string') {
+                    try {
+                        const data = JSON.parse(options.body);
+                        // Obfuscate sensitive fields in network requests
+                        if (data.responses) {
+                            data.responses = data.responses.map(response => ({
+                                ...response,
+                                actualVersion: response.actualVersion ? 'version_' + btoa(response.actualVersion).slice(0,6) : undefined,
+                                trialType: response.trialType ? 'type_' + btoa(response.trialType).slice(0,6) : undefined,
+                                selectedVersion: response.selectedVersion ? 'selected_' + btoa(response.selectedVersion).slice(0,6) : undefined
+                            }));
+                        }
+                        options.body = JSON.stringify(data);
+                    } catch (e) {
+                        // If not JSON, leave as is
+                    }
+                }
+                return originalFetch.call(this, url, options);
+            };
+        };
+        
+        // 🔒 SECURITY LEVEL 6: Context Menu and Keyboard Shortcuts
+        const blockInspection = () => {
+            // Disable right-click context menu
+            document.addEventListener('contextmenu', e => {
+                e.preventDefault();
+                return false;
+            });
+            
+            // Disable common dev tools shortcuts
+            document.addEventListener('keydown', e => {
+                // F12
+                if (e.keyCode === 123) {
+                    e.preventDefault();
+                    return false;
+                }
+                // Ctrl+Shift+I
+                if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+                    e.preventDefault();
+                    return false;
+                }
+                // Ctrl+Shift+C
+                if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+                    e.preventDefault();
+                    return false;
+                }
+                // Ctrl+U (view source)
+                if (e.ctrlKey && e.keyCode === 85) {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+        };
+        
+        // 🔒 ACTIVATE ALL SECURITY LAYERS
+        secureConsole();
+        blockDevTools();
+        secureGlobals();
+        secureNetwork();
+        
+        // Optional: More aggressive protection (can be annoying)
+        // blockInspection();
+        
+        console.log('🔒 Multi-layer security active for blind testing');
+        
+    })();
+    </script>
+    
+    <!-- 🔒 ADDITIONAL SECURITY: Meta tags to discourage caching -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="module">
       // ✅ CORRECT v2.7.2 ES6 Module Import
@@ -324,6 +526,10 @@
                     </div>
                 </div>
                 <p class="text-aura-secondary mb-6">Your voice profile has been saved successfully</p>
+                
+                <!-- Voice Preference Summary -->
+                <div id="voice-preference-summary" class="text-aura-primary text-lg mt-4 text-center"></div>
+                
                 <div class="flex gap-4 justify-center">
                     <button id="start-new-quiz-btn" class="btn-primary">Start New Quiz</button>
                 </div>
