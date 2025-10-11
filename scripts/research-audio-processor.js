@@ -65,7 +65,8 @@ class ResearchAudioProcessor {
             this.audioWorkletNode = new AudioWorkletNode(this.audioContext, 'VoiceProcessor', {
                 numberOfInputs: 1,
                 numberOfOutputs: 1,
-                channelCount: 1
+                channelCount: 1,
+                processorOptions: {}
             });
 
       } catch (superpoweredError) {
@@ -79,7 +80,8 @@ class ResearchAudioProcessor {
                 this.audioWorkletNode = new AudioWorkletNode(this.audioContext, 'VoiceProcessor', {
                     numberOfInputs: 1,
                     numberOfOutputs: 1,
-                    channelCount: 1
+                    channelCount: 1,
+                    processorOptions: {}
                 });
                 
             } catch (fallbackError) {
